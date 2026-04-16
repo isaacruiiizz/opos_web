@@ -2,12 +2,13 @@ import os
 import re
 import json
 from google import genai
+from fastapi import HTTPException
 
 class GeminiService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY", "")
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-2.0-flash-lite"
+        self.model = "gemma-4-31b-it"
 
     async def _generate_json(self, prompt: str) -> dict | list:
         try:
@@ -16,11 +17,25 @@ class GeminiService:
                 contents=prompt,
             )
         except Exception as e:
-            raise RuntimeError(f"Gemini API error (model={self.model}): {e}") from e
+            msg = str(e)
+            if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+                raise HTTPException(
+                    status_code=429,
+                    detail="Massa sol·licituds a la IA. Espera 1 minut i torna a intentar-ho."
+                )
+            if "503" in msg or "UNAVAILABLE" in msg:
+                raise HTTPException(
+                    status_code=503,
+                    detail="La IA està saturada temporalment. Torna a intentar-ho en uns segons."
+                )
+            raise HTTPException(status_code=500, detail=f"Error IA: {e}")
         text = response.text.strip()
         text = re.sub(r"^```\w*\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
-        return json.loads(text)
+        try:
+            return json.loads(text)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=500, detail="La IA ha retornat una resposta invàlida. Torna a intentar-ho.")
 
     async def generate_flashcards(self, topic_text: str, topic_name: str) -> list[dict]:
         prompt = (
