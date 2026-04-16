@@ -133,16 +133,11 @@ watch(activeTopic, (newId, oldId) => {
       suposit: suposit.value,
     })
   }
+  // Always show the mode selector when switching topics, even if there's cached progress
+  activeMode.value = null
   const cached = sessionCache.get(newId)
-  if (cached?.mode) {
-    activeMode.value = cached.mode
-    questions.value = cached.questions || []
-    suposit.value = cached.suposit || null
-  } else {
-    activeMode.value = null
-    questions.value = []
-    suposit.value = null
-  }
+  questions.value = cached?.questions || []
+  suposit.value = cached?.suposit || null
   // Restore progress badges for new topic from cache
   modeProgress.value = sessionCache.get(`progress_${newId}`) || {}
 })
