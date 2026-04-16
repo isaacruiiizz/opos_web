@@ -13,7 +13,7 @@
       <button @click="saveCanvas" class="ml-auto text-sm text-primary font-medium">Desar</button>
       <button @click="clearCanvas" class="text-sm text-red-500">Esborrar tot</button>
     </div>
-    <canvas ref="canvasEl" class="w-full touch-none" />
+    <canvas ref="canvasEl" class="w-full touch-none" style="background: transparent" />
   </div>
 </template>
 
@@ -60,7 +60,7 @@ function initCanvas() {
   fc = new Canvas(canvasEl.value, {
     width,
     height: canvasHeight.value,
-    backgroundColor: 'transparent',
+    backgroundColor: '',
   })
   fc.freeDrawingBrush = new PencilBrush(fc)
   fc.isDrawingMode = true

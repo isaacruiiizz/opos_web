@@ -15,13 +15,25 @@
       </div>
       <section class="p-2">
         <p class="text-xs font-semibold uppercase text-gray-400 px-2 py-1">Bloc General</p>
-        <TopicItem v-for="t in topics.generalTopics" :key="t.id" :topic="t"
-                   @select="selectTopic(t.id)" />
+        <button v-for="t in topics.generalTopics" :key="t.id"
+                @click="selectTopic(t.id)"
+                class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm
+                       hover:bg-primary/10 transition-colors"
+                :class="{ 'bg-primary/10 text-primary font-medium': topics.activeTopicId === t.id }">
+          <span class="text-base" :title="`${Math.round(t.overall_pct || 0)}%`">{{ progressDot(t.overall_pct) }}</span>
+          <span class="truncate">Tema {{ t.number }}: {{ t.title }}</span>
+        </button>
       </section>
       <section class="p-2">
         <p class="text-xs font-semibold uppercase text-gray-400 px-2 py-1">Bloc Específic</p>
-        <TopicItem v-for="t in topics.especificTopics" :key="t.id" :topic="t"
-                   @select="selectTopic(t.id)" />
+        <button v-for="t in topics.especificTopics" :key="t.id"
+                @click="selectTopic(t.id)"
+                class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm
+                       hover:bg-primary/10 transition-colors"
+                :class="{ 'bg-primary/10 text-primary font-medium': topics.activeTopicId === t.id }">
+          <span class="text-base" :title="`${Math.round(t.overall_pct || 0)}%`">{{ progressDot(t.overall_pct) }}</span>
+          <span class="truncate">Tema {{ t.number }}: {{ t.title }}</span>
+        </button>
       </section>
     </aside>
   </Transition>
@@ -36,42 +48,17 @@ const ui = useUiStore()
 const topics = useTopicsStore()
 const router = useRouter()
 
+function progressDot(pct) {
+  if (pct >= 80) return '✓'
+  if (pct >= 40) return '◑'
+  return '○'
+}
+
 function selectTopic(id) {
   topics.setActiveTopic(id)
   ui.closeDrawer()
   router.push('/apunts')
 }
-</script>
-
-<script>
-import { useTopicsStore } from '../../stores/topics.js'
-
-const TopicItem = {
-  props: ['topic'],
-  emits: ['select'],
-  template: `
-    <button @click="$emit('select')"
-      class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm
-             hover:bg-primary/10 transition-colors"
-      :class="{ 'bg-primary/10 text-primary font-medium': isActive }">
-      <span class="text-base" :title="progressLabel">{{ dot }}</span>
-      <span class="truncate">Tema {{ topic.number }}: {{ topic.title }}</span>
-    </button>
-  `,
-  computed: {
-    isActive() {
-      return useTopicsStore().activeTopicId === this.topic.id
-    },
-    dot() {
-      const p = this.topic.overall_pct
-      if (p >= 80) return '✓'
-      if (p >= 40) return '◑'
-      return '○'
-    },
-    progressLabel() { return `${Math.round(this.topic.overall_pct)}%` }
-  }
-}
-export default { components: { TopicItem } }
 </script>
 
 <style scoped>

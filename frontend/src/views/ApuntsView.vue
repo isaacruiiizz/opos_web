@@ -17,10 +17,14 @@
       <span class="text-gray-400 animate-pulse">Carregant tema…</span>
     </div>
     <div v-else class="relative">
-      <AnnotationLayer v-show="mode === 'text'" :topic-id="topics.activeTopicId">
-        <TopicContent :content="topicData?.content" :headings="topicData?.headings || []" />
-      </AnnotationLayer>
-      <DrawingCanvas v-if="mode === 'draw'" :topic-id="topics.activeTopicId" />
+      <div :class="mode === 'draw' ? 'pointer-events-none select-none' : ''">
+        <AnnotationLayer :topic-id="topics.activeTopicId">
+          <TopicContent :content="topicData?.content" :headings="topicData?.headings || []" />
+        </AnnotationLayer>
+      </div>
+      <div v-if="mode === 'draw'" class="absolute top-0 left-0 w-full z-10">
+        <DrawingCanvas :topic-id="topics.activeTopicId" />
+      </div>
     </div>
   </div>
 </template>
