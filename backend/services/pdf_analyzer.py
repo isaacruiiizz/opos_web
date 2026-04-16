@@ -5,9 +5,8 @@ import fitz  # PyMuPDF
 from services.gemini import get_gemini
 from services.markdown_parser import get_topics
 
-_default_pdf = str(Path(__file__).parent.parent.parent / "data" / "EdicteC1Maçanet.pdf")
 _default_notes = str(Path(__file__).parent.parent.parent / "data" / "ApuntsTemari.md")
-PDF_PATH = Path(os.getenv("PDF_PATH", _default_pdf))
+PDF_PATH = Path(os.getenv("PDF_PATH", "/data/EdicteC1Maçanet.pdf"))
 NOTES_PATH = Path(os.getenv("NOTES_PATH", _default_notes))
 
 def extract_pdf_text(pdf_path: Path = PDF_PATH) -> str:

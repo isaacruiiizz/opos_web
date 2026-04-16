@@ -14,7 +14,18 @@
         <p class="text-sm text-gray-600 dark:text-gray-400">
           Analitza la cobertura dels apunts respecte al temari oficial en PDF.
         </p>
-        <button @click="runPdf" :disabled="pdfLoading"
+
+        <!-- PDF absent -->
+        <div v-if="pdfExists === false"
+             class="flex items-start gap-2 p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20
+                    border border-orange-200 dark:border-orange-800 text-xs text-orange-700 dark:text-orange-400">
+          <svg class="flex-shrink-0 mt-0.5" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>El fitxer PDF no existeix al servidor. Puja-lo a <code class="font-mono bg-orange-100 dark:bg-orange-900/40 px-1 rounded">/data/</code> i reinicia el backend.</span>
+        </div>
+
+        <button @click="runPdf" :disabled="pdfLoading || pdfExists === false"
                 class="w-full py-2.5 border border-[var(--color-border)] rounded-xl text-sm
                        font-medium text-gray-600 dark:text-gray-400 hover:border-primary
                        hover:text-primary disabled:opacity-50 flex items-center justify-center gap-2">
@@ -24,11 +35,15 @@
           <svg v-else width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
-          {{ pdfLoading ? 'Analitzant…' : 'Analitzar cobertura del temari' }}
+          {{ pdfLoading ? 'Analitzant… (pot trigar uns minuts)' : 'Analitzar cobertura del temari' }}
         </button>
         <p v-if="pdfDone" class="text-xs text-green-600 flex items-center gap-1">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Anàlisi completada
+          Anàlisi completada. Vés a Progrés per veure els resultats.
+        </p>
+        <p v-if="pdfError" class="text-xs text-red-500 flex items-start gap-1">
+          <svg class="flex-shrink-0 mt-0.5" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          {{ pdfError }}
         </p>
       </div>
     </section>
@@ -124,21 +139,35 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import AIConfig from '../components/progres/AIConfig.vue'
-import { runPdfAnalysis, resetProgress, clearEnrichments, clearFlashcards, clearDrawings } from '../api/client.js'
+import { fetchPdfStatus, runPdfAnalysis, resetProgress, clearEnrichments, clearFlashcards, clearDrawings } from '../api/client.js'
 
 const pdfLoading = ref(false)
 const pdfDone = ref(false)
+const pdfError = ref(null)
+const pdfExists = ref(null)   // null = checking, true/false = result
 const busy = reactive({ enrichments: false, flashcards: false, drawings: false, progress: false })
 const feedback = reactive({})
+
+onMounted(async () => {
+  try {
+    const status = await fetchPdfStatus()
+    pdfExists.value = status.exists
+  } catch {
+    pdfExists.value = null
+  }
+})
 
 async function runPdf() {
   pdfLoading.value = true
   pdfDone.value = false
+  pdfError.value = null
   try {
     await runPdfAnalysis()
     pdfDone.value = true
+  } catch (e) {
+    pdfError.value = e.response?.data?.detail || 'Error en l\'anàlisi del PDF.'
   } finally {
     pdfLoading.value = false
   }

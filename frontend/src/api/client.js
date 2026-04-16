@@ -18,6 +18,7 @@ export const evaluateAnswer = async (payload) => (await api.post('/practice/eval
 export const saveSession = async (payload) => (await api.post('/practice/sessions', payload)).data
 export const fetchProgress = async () => (await api.get('/progress')).data
 export const fetchExamReadiness = async () => (await api.get('/progress/exam-readiness')).data
+export const fetchPdfStatus = async () => (await api.get('/pdf/status')).data
 export const runPdfAnalysis = async () => (await api.post('/pdf/analyze')).data
 export const fetchPdfAnalysis = async () => (await api.get('/pdf/analysis')).data
 export const fetchConfig = async () => (await api.get('/config')).data

@@ -174,18 +174,24 @@ async function handleEnrich(idx) {
 }
 
 // ── scroll tracking ────────────────────────────────────────────────────────
+// The scroll container is <main> (overflow-y-auto in App.vue), not window.
+let _scrollEl = null
+
 function onScroll() {
-  const el = document.documentElement
+  const el = _scrollEl
+  if (!el) return
   const scrollable = el.scrollHeight - el.clientHeight
   readingPct.value = scrollable > 0 ? Math.round((el.scrollTop / scrollable) * 100) : 0
 }
 
 onMounted(() => {
-  window.addEventListener('scroll', onScroll, { passive: true })
+  _scrollEl = document.querySelector('main')
+  _scrollEl?.addEventListener('scroll', onScroll, { passive: true })
 })
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', onScroll)
+  _scrollEl?.removeEventListener('scroll', onScroll)
+  _scrollEl = null
 })
 
 watch(() => topics.activeTopicId, (id) => {
