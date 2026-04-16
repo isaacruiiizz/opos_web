@@ -2,6 +2,7 @@ import os
 import re
 import json
 import time
+import asyncio
 import logging
 from datetime import date
 from google import genai
@@ -116,31 +117,44 @@ class GeminiService:
             return []
 
     async def _generate_json(self, prompt: str) -> dict | list:
-        try:
-            response = await self.client.aio.models.generate_content(
-                model=self.model,
-                contents=prompt,
-            )
-        except Exception as e:
-            msg = str(e).upper()
-            etype = type(e).__name__.upper()
-            logger.error(f"Error IA [{etype}] model={self.model}: {e}")
-            if any(x in msg or x in etype for x in ("429", "RESOURCE_EXHAUSTED", "QUOTA", "RATELIMIT")):
-                raise HTTPException(
-                    status_code=429,
-                    detail="Massa sol·licituds a la IA. Espera 1 minut i torna a intentar-ho."
+        last_exc = None
+        for attempt in range(3):  # up to 3 attempts (0, 1, 2)
+            try:
+                response = await self.client.aio.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
                 )
-            if any(x in msg or x in etype for x in ("503", "UNAVAILABLE", "OVERLOADED")):
-                raise HTTPException(
-                    status_code=503,
-                    detail="La IA està saturada temporalment. Torna a intentar-ho en uns segons."
-                )
-            if any(x in msg or x in etype for x in ("404", "NOT_FOUND")):
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"El model '{self.model}' no suporta generació de contingut. Canvia el model a la configuració."
-                )
-            raise HTTPException(status_code=500, detail=f"Error IA: {e}")
+                break  # success
+            except Exception as e:
+                last_exc = e
+                msg = str(e).upper()
+                etype = type(e).__name__.upper()
+                logger.error(f"Error IA [{etype}] attempt={attempt+1} model={self.model}: {e}")
+
+                if any(x in msg or x in etype for x in ("429", "RESOURCE_EXHAUSTED", "QUOTA", "RATELIMIT")):
+                    raise HTTPException(
+                        status_code=429,
+                        detail="Massa sol·licituds a la IA. Espera 1 minut i torna a intentar-ho."
+                    )
+                if any(x in msg or x in etype for x in ("404", "NOT_FOUND")):
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"El model '{self.model}' no suporta generació de contingut. Canvia el model a la configuració."
+                    )
+                # 500 INTERNAL or 503 UNAVAILABLE — retry with backoff
+                if any(x in msg or x in etype for x in ("500", "INTERNAL", "503", "UNAVAILABLE", "OVERLOADED")):
+                    if attempt < 2:
+                        wait = 3 * (attempt + 1)  # 3s, 6s
+                        logger.warning(f"Error transitori, reintentant en {wait}s…")
+                        await asyncio.sleep(wait)
+                        continue
+                    raise HTTPException(
+                        status_code=503,
+                        detail="La IA ha fallat repetidament. Torna a intentar-ho en uns moments."
+                    )
+                raise HTTPException(status_code=500, detail=f"Error IA: {e}")
+        else:
+            raise HTTPException(status_code=503, detail=f"Error IA persistent: {last_exc}")
 
         # Track usage
         usage = getattr(response, "usage_metadata", None)
