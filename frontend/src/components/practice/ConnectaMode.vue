@@ -1,7 +1,14 @@
 <template>
   <div class="px-4 py-6 max-w-lg mx-auto">
     <div v-if="finished" class="text-center py-8">
-      <p class="text-5xl mb-3">{{ score === total ? '🎉' : '💪' }}</p>
+      <div class="flex justify-center mb-3">
+        <svg v-if="score === total" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary">
+          <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
+        </svg>
+        <svg v-else width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-primary">
+          <circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>
+        </svg>
+      </div>
       <p class="text-2xl font-bold text-primary">{{ score }}/{{ total }} correctes</p>
       <button @click="$emit('done', score / total * 10)"
               class="mt-6 px-6 py-3 bg-primary text-white rounded-2xl font-semibold">
@@ -16,7 +23,8 @@
         </button>
         <button @click="emit('done', score / total * 10)"
                 class="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700">
-          Finalitzar ✓
+          Finalitzar
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </button>
       </div>
       <div class="grid grid-cols-2 gap-3">

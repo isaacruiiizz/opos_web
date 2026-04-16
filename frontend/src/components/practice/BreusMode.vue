@@ -32,7 +32,8 @@
           </button>
           <button @click="submitAll"
                   class="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700">
-            Finalitzar ✓
+            Finalitzar
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
         </div>
         <div class="mb-3 text-sm text-gray-400">Pregunta {{ current + 1 }} de {{ questions.length }}</div>

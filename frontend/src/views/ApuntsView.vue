@@ -1,30 +1,33 @@
 <template>
   <div>
-    <!-- Sticky header -->
-    <div class="sticky top-0 z-30 flex items-center gap-2 px-4 py-2
-                bg-[var(--color-surface)] border-b border-[var(--color-border)]">
-      <button @click="mode = 'text'"
-              :class="mode === 'text' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
-              class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-        </svg>
-        Text
-      </button>
-      <button @click="mode = 'draw'"
-              :class="mode === 'draw' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
-              class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-        </svg>
-        Dibuix
-      </button>
-      <span class="flex-1 text-sm font-semibold truncate max-w-[180px] text-center">{{ topicData?.title }}</span>
-      <span class="text-xs text-gray-400 tabular-nums">{{ readingPct }}%</span>
+    <!-- Sticky header with progress bar pinned to its bottom edge -->
+    <div class="sticky top-0 z-30 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+      <div class="flex items-center gap-2 px-4 py-2">
+        <button @click="mode = 'text'"
+                :class="mode === 'text' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
+                class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+          Text
+        </button>
+        <button @click="mode = 'draw'"
+                :class="mode === 'draw' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
+                class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+          </svg>
+          Dibuix
+        </button>
+        <span class="flex-1 text-sm font-semibold truncate max-w-[180px] text-center">{{ topicData?.title }}</span>
+        <span class="text-xs text-gray-400 tabular-nums">{{ readingPct }}%</span>
+      </div>
+      <!-- Progress bar always visible at bottom of header -->
+      <div class="h-[3px] bg-[var(--color-border)]">
+        <div class="h-full bg-gradient-to-r from-primary to-blue-400 transition-[width] duration-150"
+             :style="{ width: readingPct + '%' }"></div>
+      </div>
     </div>
-
-    <!-- Reading progress bar -->
-    <ReadingProgressBar :pct="readingPct" :top-offset="headerHeight" />
 
     <!-- Loading -->
     <div v-if="loading" class="flex items-center justify-center h-48">
@@ -53,14 +56,12 @@
             <SectionBlock
               v-for="section in sections"
               :key="section.index"
-              :ref="el => { if (el) sectionEls[section.index] = el }"
               :index="section.index"
               :title="section.title"
               :markdown="section.markdown"
               :enrichment="enrichments[section.index] || null"
               :loading="enrichLoading[section.index] || false"
               :error="enrichErrors[section.index] || null"
-              :is-read="readSections.has(section.index)"
               @enrich="handleEnrich" />
           </div>
         </AnnotationLayer>
@@ -75,7 +76,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { useTopicsStore } from '../stores/topics.js'
 import {
   fetchTopicContent,
@@ -86,7 +87,6 @@ import {
 } from '../api/client.js'
 import AnnotationLayer from '../components/apunts/AnnotationLayer.vue'
 import DrawingCanvas from '../components/apunts/DrawingCanvas.vue'
-import ReadingProgressBar from '../components/apunts/ReadingProgressBar.vue'
 import AISummaryCard from '../components/apunts/AISummaryCard.vue'
 import SectionBlock from '../components/apunts/SectionBlock.vue'
 
@@ -101,32 +101,7 @@ const enrichLoading = reactive({})
 const enrichErrors = reactive({})
 const summary = ref(null)
 const summaryLoading = ref(false)
-const readSections = ref(new Set())
 const readingPct = ref(0)
-const contentEl = ref(null)
-const sectionEls = reactive({})
-const headerHeight = 45
-
-// ── localStorage helpers ───────────────────────────────────────────────────
-const READ_KEY = 'opos_sections_read'
-
-function loadReadSections(topicId) {
-  try {
-    const raw = localStorage.getItem(READ_KEY)
-    const store = raw ? JSON.parse(raw) : {}
-    readSections.value = new Set(store[topicId] || [])
-  } catch { readSections.value = new Set() }
-}
-
-function saveReadSection(topicId, idx) {
-  try {
-    const raw = localStorage.getItem(READ_KEY)
-    const store = raw ? JSON.parse(raw) : {}
-    if (!store[topicId]) store[topicId] = []
-    if (!store[topicId].includes(idx)) store[topicId].push(idx)
-    localStorage.setItem(READ_KEY, JSON.stringify(store))
-  } catch {}
-}
 
 // ── section parser ─────────────────────────────────────────────────────────
 function parseSections(markdown) {
@@ -163,8 +138,6 @@ async function loadTopic(id) {
   try {
     topicData.value = await fetchTopicContent(id)
     sections.value = parseSections(topicData.value.content)
-    loadReadSections(id)
-
     const existing = await fetchEnrichments(id)
     existing.forEach(e => { enrichments[e.section_idx] = { type: e.type, data: e.data } })
 
@@ -207,42 +180,15 @@ function onScroll() {
   readingPct.value = scrollable > 0 ? Math.round((el.scrollTop / scrollable) * 100) : 0
 }
 
-let observer = null
-
-async function setupObserver() {
-  await nextTick()
-  if (observer) observer.disconnect()
-  observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting && entry.intersectionRatio >= 0.8) {
-        const idx = parseInt(entry.target.dataset.sectionIdx)
-        if (!isNaN(idx) && !readSections.value.has(idx)) {
-          readSections.value = new Set([...readSections.value, idx])
-          saveReadSection(topics.activeTopicId, idx)
-        }
-      }
-    })
-  }, { threshold: 0.8 })
-
-  Object.entries(sectionEls).forEach(([idx, el]) => {
-    if (el?.$el) {
-      el.$el.dataset.sectionIdx = idx
-      observer.observe(el.$el)
-    }
-  })
-}
-
 onMounted(() => {
   window.addEventListener('scroll', onScroll, { passive: true })
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
-  if (observer) observer.disconnect()
 })
 
-watch(() => topics.activeTopicId, async (id) => {
-  await loadTopic(id)
-  await setupObserver()
+watch(() => topics.activeTopicId, (id) => {
+  loadTopic(id)
 }, { immediate: true })
 </script>

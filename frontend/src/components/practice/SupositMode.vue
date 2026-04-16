@@ -36,7 +36,8 @@
           </button>
           <button @click="resposta.trim() ? submit() : emit('done', 0)"
                   class="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700">
-            Finalitzar ✓
+            Finalitzar
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
         </div>
         <div class="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 mb-4">

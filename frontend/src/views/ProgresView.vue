@@ -35,14 +35,21 @@
       <button @click="runPdf" :disabled="pdfLoading"
               class="w-full py-3 border border-[var(--color-border)] rounded-2xl text-sm
                      font-medium text-gray-600 dark:text-gray-400 hover:border-primary
-                     hover:text-primary disabled:opacity-50">
-        {{ pdfLoading ? 'Analitzant temari…' : '🔍 Analitzar cobertura del temari oficial' }}
+                     hover:text-primary disabled:opacity-50 flex items-center justify-center gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        {{ pdfLoading ? 'Analitzant temari…' : 'Analitzar cobertura del temari oficial' }}
       </button>
       <AIConfig />
       <button @click="confirmReset"
               class="w-full py-3 border border-red-200 dark:border-red-800 rounded-2xl text-sm
-                     font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
-        🗑 Reiniciar tot el progrés
+                     font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20
+                     flex items-center justify-center gap-2">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+        Reiniciar tot el progrés
       </button>
     </template>
   </div>

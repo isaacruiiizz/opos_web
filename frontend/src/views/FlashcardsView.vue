@@ -10,8 +10,11 @@
     </div>
     <div class="flex gap-2 px-4 py-2 border-b border-[var(--color-border)]">
       <button @click="generateCards"
-              class="flex-1 py-2 bg-primary/10 text-primary rounded-xl text-sm font-medium hover:bg-primary/20">
-        ✨ Generar amb IA
+              class="flex-1 py-2 bg-primary/10 text-primary rounded-xl text-sm font-medium hover:bg-primary/20 flex items-center justify-center gap-1.5">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+        </svg>
+        Generar amb IA
       </button>
       <button @click="showForm = !showForm"
               class="px-4 py-2 border border-[var(--color-border)] rounded-xl text-sm font-medium hover:border-primary">
@@ -35,7 +38,9 @@
       </button>
     </div>
     <div v-if="loading" class="flex justify-center py-12">
-      <span class="animate-spin text-2xl">⏳</span>
+      <svg class="animate-spin text-primary" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="9" stroke-opacity="0.25"/><path d="M12 3a9 9 0 0 1 9 9"/>
+      </svg>
     </div>
     <LeitnerDeck v-else :cards="cards" @generate="generateCards" @reviewed="reload" />
   </div>

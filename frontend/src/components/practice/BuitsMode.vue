@@ -14,7 +14,11 @@
         <span v-bind="i === 0 ? { 'data-result-0': '' } : {}"
               :class="isCorrect(s, answers[i]) ? 'text-green-600' : 'text-red-600'"
               class="text-xs font-semibold mt-1 block">
-          {{ isCorrect(s, answers[i]) ? '✓ Correcte' : `✗ Correcta: ${s.paraules[0]}` }}
+          <span class="inline-flex items-center gap-1">
+            <svg v-if="isCorrect(s, answers[i])" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <svg v-else width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            {{ isCorrect(s, answers[i]) ? 'Correcte' : `Correcta: ${s.paraules[0]}` }}
+          </span>
         </span>
       </div>
     </div>
@@ -26,7 +30,8 @@
       </button>
       <button @click="checked = true"
               class="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700">
-        Finalitzar ✓
+        Finalitzar
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </button>
     </div>
     <button v-if="!checked" data-check @click="checked = true"

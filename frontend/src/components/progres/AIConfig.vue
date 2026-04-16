@@ -7,8 +7,11 @@
       <div class="flex items-center justify-between">
         <span class="text-sm font-semibold">Model actiu</span>
         <button @click="loadData" :disabled="loading"
-                class="text-xs text-gray-400 hover:text-primary disabled:opacity-40">
-          ↻ Actualitzar
+                class="text-xs text-gray-400 hover:text-primary disabled:opacity-40 flex items-center gap-1">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.95"/>
+          </svg>
+          Actualitzar
         </button>
       </div>
 
@@ -19,7 +22,7 @@
                 class="w-full rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm
                        bg-[var(--color-surface)] focus:outline-none focus:border-primary">
           <option v-for="m in models" :key="m.id" :value="m.id" :disabled="m.supported === false">
-            {{ m.supported === false ? '🔒 ' : '' }}{{ m.display_name || m.id }}
+            {{ m.supported === false ? '[×] ' : '' }}{{ m.display_name || m.id }}
             {{ m.description ? `— ${m.description}` : '' }}
           </option>
         </select>
@@ -105,11 +108,13 @@
     </div>
 
     <!-- Saved confirmation -->
-    <p v-if="saved" class="text-xs text-green-600 text-center animate-pulse">
-      ✓ Model desat correctament
+    <p v-if="saved" class="text-xs text-green-600 text-center animate-pulse flex items-center justify-center gap-1">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Model desat correctament
     </p>
-    <p v-if="saveError" class="text-xs text-red-500 text-center">
-      ✗ Error desant el model
+    <p v-if="saveError" class="text-xs text-red-500 text-center flex items-center justify-center gap-1">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Error desant el model
     </p>
   </div>
 </template>

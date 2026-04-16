@@ -4,14 +4,10 @@
     <div class="flex items-center justify-between px-3.5 py-3 cursor-pointer select-none hover:bg-[#faf9ff] dark:hover:bg-gray-800/50"
          @click="open = !open">
       <div class="flex items-center gap-2 text-sm font-bold">
-        <div class="w-[22px] h-[22px] rounded-[6px] flex items-center justify-center text-white text-[0.68rem] font-bold flex-shrink-0"
-             :class="isRead ? 'bg-green-500' : 'bg-primary'">
-          <template v-if="isRead">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </template>
-          <template v-else>{{ index + 1 }}</template>
+        <div class="w-[22px] h-[22px] rounded-[6px] flex items-center justify-center text-white text-[0.68rem] font-bold flex-shrink-0 bg-primary">
+          {{ index + 1 }}
         </div>
-        <span :class="isRead ? 'text-gray-500 dark:text-gray-400' : ''">{{ title }}</span>
+        <span>{{ title }}</span>
       </div>
       <div class="flex items-center gap-1.5">
         <button v-if="!enrichment && !loading" @click.stop="$emit('enrich', index)"
@@ -99,7 +95,6 @@ const props = defineProps({
   enrichment: { type: Object, default: null },
   loading: { type: Boolean, default: false },
   error: { type: String, default: null },
-  isRead: { type: Boolean, default: false },
 })
 
 defineEmits(['enrich'])
