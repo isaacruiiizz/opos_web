@@ -39,9 +39,15 @@ class GeminiService:
 
     async def generate_flashcards(self, topic_text: str, topic_name: str) -> list[dict]:
         prompt = (
-            "Ets un professor d'oposicions públiques. Genera exactament 15 flashcards.\n"
-            "Retorna ÚNICAMENT JSON (array de 15 objectes, sense cap text addicional):\n"
-            '[{"terme": "...", "definicio": "...", "exemple": "..."}]\n'
+            "Ets un professor d'oposicions públiques. La teva tasca és generar flashcards.\n"
+            "REGLES OBLIGATÒRIES:\n"
+            "1. Basa't ÚNICAMENT en el contingut proporcionat. NO inventes informació que no hi sigui.\n"
+            "2. Cada terme i definició han d'estar explícitament presents o directament derivats del text.\n"
+            "3. L'exemple ha de ser concret i extret del context del contingut.\n"
+            "4. Genera EXACTAMENT 15 flashcards, ni més ni menys.\n"
+            "5. Respon ÚNICAMENT amb JSON vàlid, sense cap text addicional, sense markdown, sense explicacions.\n"
+            "FORMAT DE RESPOSTA (array de exactament 15 objectes):\n"
+            '[{"terme": "nom exacte del concepte", "definicio": "definició basada en el text", "exemple": "exemple del text"}]\n'
             f"TEMA: {topic_name}\n"
             f"CONTINGUT:\n{topic_text[:3000]}"
         )
@@ -49,30 +55,54 @@ class GeminiService:
 
     async def generate_test(self, topic_text: str) -> list[dict]:
         prompt = (
-            "Genera 10 preguntes tipus test per a un examen de tècnic C1 d'informàtica.\n"
-            "Retorna ÚNICAMENT JSON (array de 10 objectes, sense text addicional):\n"
+            "La teva tasca és generar preguntes tipus test per a un examen de tècnic C1 d'informàtica.\n"
+            "REGLES OBLIGATÒRIES:\n"
+            "1. Basa't ÚNICAMENT en el contingut proporcionat. NO inventes informació.\n"
+            "2. La resposta correcta ha d'estar clarament justificada pel contingut donat.\n"
+            "3. Les opcions incorrectes han de ser plausibles però clarament errònies segons el text.\n"
+            "4. Genera EXACTAMENT 10 preguntes, ni més ni menys.\n"
+            "5. El camp 'correcta' ha de ser una sola lletra: A, B, C o D.\n"
+            "6. L'explicació ha de citar el contingut per justificar la resposta correcta.\n"
+            "7. Respon ÚNICAMENT amb JSON vàlid, sense cap text addicional, sense markdown.\n"
+            "FORMAT DE RESPOSTA (array de exactament 10 objectes):\n"
             '[{"pregunta": "...", "opcions": {"A":"...","B":"...","C":"...","D":"..."}, '
-            '"correcta": "A", "explicacio": "..."}]\n'
+            '"correcta": "A", "explicacio": "Per que A és correcta segons el text..."}]\n'
             f"CONTINGUT:\n{topic_text[:3000]}"
         )
         return await self._generate_json(prompt)
 
     async def generate_breus(self, topic_text: str) -> list[dict]:
         prompt = (
-            "Genera 5 preguntes breus (resposta en 2-4 línies) per a examen C1 informàtica.\n"
-            "Retorna ÚNICAMENT JSON:\n"
-            '[{"pregunta": "...", "resposta_model": "...", "criteris": "..."}]\n'
+            "La teva tasca és generar preguntes breus per a un examen de tècnic C1 d'informàtica.\n"
+            "REGLES OBLIGATÒRIES:\n"
+            "1. Basa't ÚNICAMENT en el contingut proporcionat. NO inventes informació.\n"
+            "2. Les preguntes han de poder respondre's en 2-4 línies amb la informació del text.\n"
+            "3. La resposta model ha de ser precisa i basada exclusivament en el contingut.\n"
+            "4. Els criteris d'avaluació han de reflectir els conceptes clau del text.\n"
+            "5. Genera EXACTAMENT 5 preguntes, ni més ni menys.\n"
+            "6. Respon ÚNICAMENT amb JSON vàlid, sense cap text addicional, sense markdown.\n"
+            "FORMAT DE RESPOSTA (array de exactament 5 objectes):\n"
+            '[{"pregunta": "...", "resposta_model": "resposta breu basada en el text", "criteris": "conceptes clau que cal mencionar"}]\n'
             f"CONTINGUT:\n{topic_text[:3000]}"
         )
         return await self._generate_json(prompt)
 
     async def generate_suposit(self, topic_text: str, topic_name: str) -> dict:
         prompt = (
-            "Genera un supòsit pràctic realista per a un tècnic C1 d'informàtica "
-            "en un ajuntament petit. Ha de requerir aplicació raonada, no memorització.\n"
-            "Retorna ÚNICAMENT JSON:\n"
-            '{"enunciat": "...", "context": "...", "punts_clau_resposta": ["..."], '
-            '"criteri_correccio": "...", "dificultat": "mitja"}\n'
+            "La teva tasca és generar un supòsit pràctic per a un tècnic C1 d'informàtica "
+            "en un ajuntament petit.\n"
+            "REGLES OBLIGATÒRIES:\n"
+            "1. L'enunciat ha d'estar basat DIRECTAMENT en el contingut proporcionat.\n"
+            "2. Els punts clau de resposta han d'estar extrets del contingut. NO inventes conceptes.\n"
+            "3. El supòsit ha de requerir aplicació raonada del contingut, no memorització.\n"
+            "4. El criteri de correcció ha de fer referència a conceptes presents al text.\n"
+            "5. Respon ÚNICAMENT amb JSON vàlid, sense cap text addicional, sense markdown.\n"
+            "FORMAT DE RESPOSTA (un únic objecte JSON):\n"
+            '{"enunciat": "situació pràctica basada en el contingut", '
+            '"context": "context de l\'ajuntament relacionat amb el tema", '
+            '"punts_clau_resposta": ["concepte del text que cal aplicar", "..."], '
+            '"criteri_correccio": "explicació de com puntuar basada en el contingut", '
+            '"dificultat": "mitja"}\n'
             f"TEMA: {topic_name}\n"
             f"CONTINGUT:\n{topic_text[:3000]}"
         )
@@ -80,19 +110,31 @@ class GeminiService:
 
     async def generate_connecta(self, topic_text: str) -> list[dict]:
         prompt = (
-            "Genera 10 parells terme-definició per a una activitat de relacionar conceptes.\n"
-            "Retorna ÚNICAMENT JSON:\n"
-            '[{"terme": "...", "definicio": "..."}]\n'
+            "La teva tasca és generar parells terme-definició per a una activitat de relacionar conceptes.\n"
+            "REGLES OBLIGATÒRIES:\n"
+            "1. Basa't ÚNICAMENT en el contingut proporcionat. NO inventes termes ni definicions.\n"
+            "2. Cada terme ha d'aparèixer explícitament al contingut.\n"
+            "3. Cada definició ha de ser la definició real del terme segons el text.\n"
+            "4. Genera EXACTAMENT 10 parells, ni més ni menys.\n"
+            "5. Respon ÚNICAMENT amb JSON vàlid, sense cap text addicional, sense markdown.\n"
+            "FORMAT DE RESPOSTA (array de exactament 10 objectes):\n"
+            '[{"terme": "terme del contingut", "definicio": "definició extreta del text"}]\n'
             f"CONTINGUT:\n{topic_text[:3000]}"
         )
         return await self._generate_json(prompt)
 
     async def generate_buits(self, topic_text: str) -> list[dict]:
         prompt = (
-            "Genera 8 frases clau del contingut amb 1-2 paraules importants substituïdes "
-            "per ___. Retorna ÚNICAMENT JSON:\n"
-            '[{"frase": "El ___ és responsable de...", "paraules": ["Alcalde"], '
-            '"posicions": [1]}]\n'
+            "La teva tasca és generar frases amb paraules clau eliminades per a una activitat d'omplir buits.\n"
+            "REGLES OBLIGATÒRIES:\n"
+            "1. Les frases han de ser COPIADES LITERALMENT del contingut, amb 1-2 paraules substituïdes per ___.\n"
+            "2. Les paraules eliminades han de ser termes importants i específics (no articles ni preposicions).\n"
+            "3. El camp 'paraules' ha de contenir les paraules exactes que substitueix ___ en ordre.\n"
+            "4. El camp 'posicions' indica quina posició ocupa cada ___ a la frase (comptant des de 1).\n"
+            "5. Genera EXACTAMENT 8 frases, ni més ni menys.\n"
+            "6. Respon ÚNICAMENT amb JSON vàlid, sense cap text addicional, sense markdown.\n"
+            "FORMAT DE RESPOSTA (array de exactament 8 objectes):\n"
+            '[{"frase": "La ___ és responsable de gestionar...", "paraules": ["Alcaldia"], "posicions": [2]}]\n'
             f"CONTINGUT:\n{topic_text[:2000]}"
         )
         return await self._generate_json(prompt)
@@ -106,6 +148,7 @@ class GeminiService:
             "Si un concepte no apareix a la resposta de l'usuari, NO pot ser un encert.\n"
             "2. Si la resposta de l'usuari és buida, no relacionada o massa curta, la puntuació ha de ser 0 o 1.\n"
             "3. La resposta model és referència per al corrector, mai per a l'usuari.\n"
+            "4. NO atribuïs a l'usuari coneixements que no ha demostrat escrivint-los.\n"
             "Retorna ÚNICAMENT JSON (sense text addicional):\n"
             '{"puntuacio": 7, "encerts": ["concepte que l\'usuari ha mencionat"], '
             '"mancances": ["concepte que faltava"], "feedback": "...", "puntuacio_justificada": "..."}\n'
@@ -119,9 +162,17 @@ class GeminiService:
                               exam_date: str, today: str, dies: int) -> dict:
         prompt = (
             f"L'examen és el {exam_date}. Avui és {today}. Resten {dies} dies.\n"
-            "Fes una valoració realista. Retorna ÚNICAMENT JSON:\n"
-            '{"readiness_pct": 65, "nota_estimada": 6.5, "temes_prioritaris": ["Tema X"], '
-            '"consell_estudi": "...", "temps_recomanat_per_tema": {"tema_id": 30}}\n'
+            "La teva tasca és fer una valoració realista de la preparació de l'estudiant.\n"
+            "REGLES OBLIGATÒRIES:\n"
+            "1. Basa't ÚNICAMENT en les dades de progrés proporcionades. NO inventes dades.\n"
+            "2. El 'readiness_pct' ha de reflectir la mitjana real de 'overall_pct' de les dades.\n"
+            "3. La 'nota_estimada' ha de ser proporcional al readiness_pct (100%=10, 0%=0).\n"
+            "4. Els 'temes_prioritaris' han de ser els temes amb overall_pct més baix de les dades.\n"
+            "5. Si no hi ha dades de progrés, readiness_pct ha de ser 0 i nota_estimada 0.\n"
+            "6. Respon ÚNICAMENT amb JSON vàlid, sense cap text addicional, sense markdown.\n"
+            "FORMAT DE RESPOSTA (un únic objecte JSON):\n"
+            '{"readiness_pct": 65, "nota_estimada": 6.5, "temes_prioritaris": ["topic_id del tema amb menys progrés"], '
+            '"consell_estudi": "consell basat en les dades reals", "temps_recomanat_per_tema": {"topic_id": 30}}\n'
             f"PROGRÉS PER TEMA: {progress_json}\n"
             f"GAPS DEL TEMARI: {gaps_json}"
         )
