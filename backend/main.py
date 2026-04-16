@@ -10,6 +10,7 @@ from database import init_db, get_db_ctx
 from routers import topics, annotations, drawings, flashcards, practice, progress, pdf
 from routers import config as config_router
 from routers import ai as ai_router
+from routers import enrichment as enrichment_router
 from services.gemini import set_current_model
 
 
@@ -52,3 +53,4 @@ app.include_router(progress.router)
 app.include_router(pdf.router)
 app.include_router(config_router.router)
 app.include_router(ai_router.router)
+app.include_router(enrichment_router.router)
