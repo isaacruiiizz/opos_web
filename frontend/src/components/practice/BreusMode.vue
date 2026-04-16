@@ -72,15 +72,19 @@ async function submitAll() {
   loading.value = true
   try {
     const evals = await Promise.all(
-      props.questions.map((q, i) =>
-        evaluateAnswer({
+      props.questions.map((q, i) => {
+        const ans = answers.value[i]?.trim()
+        if (!ans) {
+          return Promise.resolve({ puntuacio: 0, feedback: 'Sense resposta.', encerts: [], mancances: [] })
+        }
+        return evaluateAnswer({
           topic_id: props.topicId,
           mode: 'breus',
           pregunta: q.pregunta,
-          resposta_usuari: answers.value[i] || '(sense resposta)',
+          resposta_usuari: ans,
           resposta_model: q.resposta_model || '',
         })
-      )
+      })
     )
     evaluated.value = props.questions.map((q, i) => ({
       pregunta: q.pregunta,

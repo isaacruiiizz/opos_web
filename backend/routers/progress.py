@@ -53,6 +53,12 @@ async def get_progress(db=Depends(get_db)):
         "history": history,
     }
 
+@router.delete("/api/progress", status_code=204)
+async def reset_progress(db=Depends(get_db)):
+    await db.execute("DELETE FROM progress")
+    await db.execute("DELETE FROM practice_sessions")
+    await db.commit()
+
 @router.get("/api/progress/exam-readiness")
 async def exam_readiness(db=Depends(get_db)):
     cursor = await db.execute("SELECT * FROM progress")

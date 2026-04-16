@@ -22,3 +22,4 @@ export const runPdfAnalysis = async () => (await api.post('/pdf/analyze')).data
 export const fetchPdfAnalysis = async () => (await api.get('/pdf/analysis')).data
 export const fetchConfig = async () => (await api.get('/config')).data
 export const saveConfig = async (key, value) => (await api.post('/config', { key, value })).data
+export const resetProgress = async () => api.delete('/progress')

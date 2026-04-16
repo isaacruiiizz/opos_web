@@ -38,13 +38,18 @@
                      hover:text-primary disabled:opacity-50">
         {{ pdfLoading ? 'Analitzant temari…' : '🔍 Analitzar cobertura del temari oficial' }}
       </button>
+      <button @click="confirmReset"
+              class="w-full py-3 border border-red-200 dark:border-red-800 rounded-2xl text-sm
+                     font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+        🗑 Reiniciar tot el progrés
+      </button>
     </template>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onActivated } from 'vue'
-import { fetchProgress, runPdfAnalysis } from '../api/client.js'
+import { fetchProgress, runPdfAnalysis, resetProgress } from '../api/client.js'
 import ProgressBar from '../components/progres/ProgressBar.vue'
 import ExamReadiness from '../components/progres/ExamReadiness.vue'
 
@@ -62,6 +67,12 @@ async function runPdf() {
   pdfLoading.value = true
   try { await runPdfAnalysis() }
   finally { pdfLoading.value = false }
+}
+
+async function confirmReset() {
+  if (!confirm('Segur que vols reiniciar tot el progrés? Això esborrarà totes les puntuacions i sessions.')) return
+  await resetProgress()
+  await load()
 }
 
 onMounted(load)
