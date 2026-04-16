@@ -13,8 +13,9 @@ KNOWN_LIMITS: dict[str, dict] = {
     "gemma-3-4b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Petit"},
     "gemma-3-12b-it":        {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Mida mitjana"},
     "gemma-3-27b-it":        {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gran"},
-    "gemma-4-9b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 4 petit"},
-    "gemma-4-27b-it":        {"rpm": 15,  "tpm": None,       "rpd": 1_500,  "desc": "Gemma 4 gran, tokens il·limitats"},
+    # Gemma 4 models appear in the list API but don't support generateContent yet
+    "gemma-4-9b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 4 petit (no disponible)", "supported": False},
+    "gemma-4-27b-it":        {"rpm": 15,  "tpm": None,       "rpd": 1_500,  "desc": "Gemma 4 gran (no disponible)",  "supported": False},
     "gemma-2-9b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 2 petit"},
     "gemma-2-27b-it":        {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 2 gran"},
     "gemini-2.0-flash-lite": {"rpm": 30,  "tpm": 1_000_000,  "rpd": 1_500,  "desc": "Gemini Flash Lite"},
@@ -48,6 +49,7 @@ async def list_models():
             "rpm": limits.get("rpm"),
             "tpm": limits.get("tpm"),
             "rpd": limits.get("rpd"),
+            "supported": limits.get("supported", True),
             "input_token_limit": m.get("input_token_limit"),
             "output_token_limit": m.get("output_token_limit"),
         })
@@ -62,6 +64,7 @@ async def list_models():
                 "rpm": limits.get("rpm"),
                 "tpm": limits.get("tpm"),
                 "rpd": limits.get("rpd"),
+                "supported": limits.get("supported", True),
                 "input_token_limit": None,
                 "output_token_limit": None,
             })

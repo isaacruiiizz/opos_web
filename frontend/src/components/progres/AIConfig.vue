@@ -18,11 +18,17 @@
         <select v-model="selectedModel" @change="changeModel"
                 class="w-full rounded-xl border border-[var(--color-border)] px-3 py-2 text-sm
                        bg-[var(--color-surface)] focus:outline-none focus:border-primary">
-          <option v-for="m in models" :key="m.id" :value="m.id">
-            {{ m.display_name || m.id }}
+          <option v-for="m in models" :key="m.id" :value="m.id" :disabled="m.supported === false">
+            {{ m.supported === false ? '🔒 ' : '' }}{{ m.display_name || m.id }}
             {{ m.description ? `— ${m.description}` : '' }}
           </option>
         </select>
+
+        <p v-if="currentModelInfo?.supported === false"
+           class="text-xs text-orange-500 flex items-center gap-1">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Aquest model no suporta generació de text. Selecciona un altre model.
+        </p>
 
         <!-- Limits del model seleccionat -->
         <div v-if="currentModelInfo" class="grid grid-cols-3 gap-2 text-xs text-center">
@@ -138,6 +144,7 @@ async function loadData() {
 async function changeModel() {
   saved.value = false
   saveError.value = false
+  if (currentModelInfo.value?.supported === false) return
   try {
     await setAIModel(selectedModel.value)
     status.value = await fetchAIStatus()
