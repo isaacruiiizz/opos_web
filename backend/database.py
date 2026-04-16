@@ -65,6 +65,21 @@ _CREATE_TABLES = [
         key TEXT PRIMARY KEY,
         value TEXT
     )""",
+    """CREATE TABLE IF NOT EXISTS topic_enrichments (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        topic_id    TEXT NOT NULL,
+        section_idx INTEGER NOT NULL,
+        type        TEXT NOT NULL,
+        data_json   TEXT NOT NULL,
+        created_at  TEXT DEFAULT (datetime('now')),
+        UNIQUE(topic_id, section_idx)
+    )""",
+    """CREATE TABLE IF NOT EXISTS topic_summaries (
+        topic_id    TEXT PRIMARY KEY,
+        summary     TEXT NOT NULL,
+        chips_json  TEXT NOT NULL,
+        created_at  TEXT DEFAULT (datetime('now'))
+    )""",
 ]
 
 
