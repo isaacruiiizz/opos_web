@@ -1,7 +1,7 @@
 <template>
   <div>
-    <!-- Sticky header with progress bar pinned to its bottom edge -->
-    <div class="sticky top-0 z-30 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
+    <!-- Sticky header sits below the fixed Navbar (h-14 = 56px) -->
+    <div class="sticky top-14 z-30 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
       <div class="flex items-center gap-2 px-4 py-2">
         <button @click="mode = 'text'"
                 :class="mode === 'text' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
@@ -174,24 +174,20 @@ async function handleEnrich(idx) {
 }
 
 // ── scroll tracking ────────────────────────────────────────────────────────
-// The scroll container is <main> (overflow-y-auto in App.vue), not window.
-let _scrollEl = null
-
+// The page scrolls on <html> (outer div is min-h-screen so it can grow).
+// Sticky header uses top-14 to sit below the fixed Navbar.
 function onScroll() {
-  const el = _scrollEl
-  if (!el) return
+  const el = document.documentElement
   const scrollable = el.scrollHeight - el.clientHeight
   readingPct.value = scrollable > 0 ? Math.round((el.scrollTop / scrollable) * 100) : 0
 }
 
 onMounted(() => {
-  _scrollEl = document.querySelector('main')
-  _scrollEl?.addEventListener('scroll', onScroll, { passive: true })
+  window.addEventListener('scroll', onScroll, { passive: true })
 })
 
 onUnmounted(() => {
-  _scrollEl?.removeEventListener('scroll', onScroll)
-  _scrollEl = null
+  window.removeEventListener('scroll', onScroll)
 })
 
 watch(() => topics.activeTopicId, (id) => {

@@ -13,9 +13,9 @@
     </div>
     <template v-else>
       <div class="w-full text-center text-sm text-gray-400 mb-1">
-        {{ current + 1 }} / {{ dueCards.length }} — Caixa {{ dueCards[current].leitner_box }}
+        {{ totalDue - dueCards.length }} / {{ totalDue }} revisades — Caixa {{ dueCards[0].leitner_box }}
       </div>
-      <FlipCard :card="dueCards[current]" />
+      <FlipCard :card="dueCards[0]" :key="dueCards[0].id" />
       <div class="flex gap-4 mt-4 w-full max-w-sm">
         <button @click="review(false)"
                 class="flex-1 py-3 rounded-2xl bg-red-100 dark:bg-red-900/30
@@ -37,7 +37,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import FlipCard from './FlipCard.vue'
 import { reviewFlashcard } from '../../api/client.js'
 
@@ -45,17 +45,32 @@ const props = defineProps({ cards: { type: Array, default: () => [] } })
 const emit = defineEmits(['generate', 'reviewed'])
 
 const today = new Date().toISOString().split('T')[0]
-const dueCards = computed(() =>
+
+// Track reviewed card IDs locally so the card disappears immediately
+// without waiting for the parent to reload props.cards.
+const reviewedIds = ref(new Set())
+
+// Reset when cards list changes (new topic or regenerated)
+watch(() => props.cards, () => {
+  reviewedIds.value = new Set()
+}, { deep: false })
+
+const allDue = computed(() =>
   props.cards.filter(c => c.next_review <= today)
 )
-const current = ref(0)
+
+const totalDue = computed(() => allDue.value.length)
+
+const dueCards = computed(() =>
+  allDue.value.filter(c => !reviewedIds.value.has(c.id))
+)
 
 async function review(knew) {
-  const card = dueCards.value[current.value]
+  const card = dueCards.value[0]
+  if (!card) return
+  // Mark as reviewed immediately — card disappears from dueCards right away
+  reviewedIds.value = new Set([...reviewedIds.value, card.id])
   await reviewFlashcard(card.id, knew)
   emit('reviewed', card.id)
-  if (current.value < dueCards.value.length - 1) {
-    current.value++
-  }
 }
 </script>
