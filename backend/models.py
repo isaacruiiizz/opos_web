@@ -58,3 +58,14 @@ class SessionSave(BaseModel):
 class ConfigSet(BaseModel):
     key: str
     value: str
+
+
+class EnrichmentCreate(BaseModel):
+    topic_id: str
+    section_idx: int
+    section_markdown: str
+
+
+class SummaryRequest(BaseModel):
+    topic_id: str
+    topic_content: str

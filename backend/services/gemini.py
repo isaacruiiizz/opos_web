@@ -215,6 +215,49 @@ class GeminiService:
         )
         return await self._generate_json(prompt)
 
+    async def enrich_section(self, section_markdown: str) -> dict:
+        """Analyse a section and return a visual enrichment JSON."""
+        prompt = (
+            "Ets un expert en visualització de contingut per a oposicions. "
+            "Analitza el text de la secció i genera una representació visual en JSON.\n\n"
+            "REGLES:\n"
+            "1. Detecta el tipus de contingut:\n"
+            "   - Procés amb passos o fases → type: \"timeline\"\n"
+            "   - Comparació d'entitats amb atributs → type: \"table\"\n"
+            "   - Definicions o conceptes clau → type: \"cards\"\n"
+            "   - Lleis, regles, avisos, explicació general → type: \"callouts\"\n"
+            "2. Respon ÚNICAMENT amb JSON vàlid, sense text addicional, sense markdown.\n\n"
+            "FORMAT PER TIPUS:\n"
+            "timeline: {\"type\":\"timeline\",\"data\":[{\"step\":1,\"title\":\"...\",\"desc\":\"...\"}]}\n"
+            "table: {\"type\":\"table\",\"data\":{\"headers\":[\"...\"],\"rows\":[[\"...\"]],\"highlight\":[]}}\n"
+            "cards: {\"type\":\"cards\",\"data\":[{\"title\":\"...\",\"desc\":\"...\",\"icon\":\"building\"}]}\n"
+            "  (icon valors: building, user, file, scale, shield, clock, globe, users, key, flag)\n"
+            "callouts: {\"type\":\"callouts\",\"data\":[{\"variant\":\"law\",\"title\":\"...\",\"text\":\"...\"}]}\n"
+            "  (variant valors: law=blau, important=groc, exam=verd)\n\n"
+            f"SECCIÓ:\n{section_markdown[:2000]}"
+        )
+        return await self._generate_json(prompt)
+
+    async def generate_topic_summary(self, topic_content: str) -> dict:
+        """Generate a short summary and concept chips for a topic."""
+        prompt = (
+            "Ets un expert en preparació d'oposicions. "
+            "Llegeix el text del tema i genera un resum visual.\n\n"
+            "REGLES:\n"
+            "1. El resum ha de tenir 1-2 frases que capturin l'essència del tema.\n"
+            "2. Genera entre 3 i 5 chips de conceptes clau.\n"
+            "3. Cada chip té: label (text curt, màx 4 paraules) i category.\n"
+            "4. Categories de chip:\n"
+            "   - concept: concepte principal del tema\n"
+            "   - law: referència a una llei o article\n"
+            "   - alert: punt important a no oblidar\n"
+            "   - exam: molt probable a l'examen\n"
+            "5. Respon ÚNICAMENT amb JSON vàlid, sense text addicional.\n\n"
+            "FORMAT: {\"summary\":\"...\",\"chips\":[{\"label\":\"...\",\"category\":\"concept\"}]}\n\n"
+            f"CONTINGUT DEL TEMA:\n{topic_content[:3000]}"
+        )
+        return await self._generate_json(prompt)
+
     async def generate_connecta(self, topic_text: str) -> list[dict]:
         prompt = (
             "La teva tasca és generar parells terme-definició per a una activitat de relacionar conceptes.\n"
