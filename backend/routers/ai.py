@@ -94,5 +94,4 @@ async def set_model(body: SetModelBody, db=Depends(get_db)):
         "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
         (body.model,)
     )
-    await db.commit()
     return {"model": body.model}

@@ -58,12 +58,13 @@
         Generat per IA · {{ typeLabel(enrichment.type) }}
       </div>
 
-      <TimelineView v-if="enrichment?.type === 'timeline'" :data="enrichment.data" />
-      <ConceptCards v-else-if="enrichment?.type === 'cards'" :data="enrichment.data" />
-      <ComparisonTable v-else-if="enrichment?.type === 'table'" :data="enrichment.data" />
-      <CalloutBoxes v-else-if="enrichment?.type === 'callouts'" :data="enrichment.data" />
-
-      <ProseContent :content="markdown" />
+      <template v-if="enrichment">
+        <TimelineView v-if="enrichment.type === 'timeline'" :data="enrichment.data" />
+        <ConceptCards v-else-if="enrichment.type === 'cards'" :data="enrichment.data" />
+        <ComparisonTable v-else-if="enrichment.type === 'table'" :data="enrichment.data" />
+        <CalloutBoxes v-else-if="enrichment.type === 'callouts'" :data="enrichment.data" />
+      </template>
+      <ProseContent v-else :content="markdown" />
     </div>
   </div>
 </template>

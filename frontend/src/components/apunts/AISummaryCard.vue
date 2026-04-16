@@ -1,13 +1,13 @@
 <template>
   <div v-if="loading"
-       class="rounded-2xl border border-[#c4b5fd] bg-gradient-to-br from-[#f5f3ff] to-[#eff6ff] p-4 mb-5 animate-pulse">
-    <div class="h-3 bg-purple-200 rounded w-24 mb-3"></div>
-    <div class="h-3 bg-purple-100 rounded w-full mb-2"></div>
-    <div class="h-3 bg-purple-100 rounded w-4/5"></div>
+       class="rounded-2xl border border-[#c4b5fd] bg-gradient-to-br from-[#f5f3ff] to-[#eff6ff] dark:from-purple-950/40 dark:to-blue-950/30 dark:border-purple-800 p-4 mb-5 animate-pulse">
+    <div class="h-3 bg-purple-200 dark:bg-purple-800 rounded w-24 mb-3"></div>
+    <div class="h-3 bg-purple-100 dark:bg-purple-900 rounded w-full mb-2"></div>
+    <div class="h-3 bg-purple-100 dark:bg-purple-900 rounded w-4/5"></div>
   </div>
 
   <div v-else-if="summary"
-       class="rounded-2xl border border-[#c4b5fd] bg-gradient-to-br from-[#f5f3ff] to-[#eff6ff] p-4 mb-5">
+       class="rounded-2xl border border-[#c4b5fd] dark:border-purple-800 bg-gradient-to-br from-[#f5f3ff] to-[#eff6ff] dark:from-purple-950/40 dark:to-blue-950/30 p-4 mb-5">
     <div class="flex items-center justify-between mb-2.5">
       <span class="inline-flex items-center gap-1.5 text-[0.65rem] font-bold text-primary
                    bg-primary/10 px-2 py-0.5 rounded-full tracking-wide">
@@ -39,11 +39,11 @@ defineProps({
 
 function chipClass(category) {
   const map = {
-    concept: 'bg-blue-100 text-blue-700',
-    law: 'bg-green-100 text-green-700',
-    alert: 'bg-orange-100 text-orange-700',
-    exam: 'bg-red-100 text-red-700',
+    concept: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+    law: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+    alert: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
+    exam: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
   }
-  return map[category] || 'bg-gray-100 text-gray-600'
+  return map[category] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
 }
 </script>
