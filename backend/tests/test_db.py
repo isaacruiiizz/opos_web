@@ -15,5 +15,6 @@ async def test_init_db_creates_all_tables(tmp_path, monkeypatch):
         )
         tables = {row[0] for row in await cursor.fetchall()}
     expected = {"progress", "annotations", "drawings", "flashcards",
-                "practice_sessions", "pdf_analysis", "config"}
+                "practice_sessions", "pdf_analysis", "config",
+                "topic_enrichments", "topic_summaries"}
     assert expected.issubset(tables), f"Missing tables: {expected - tables}"

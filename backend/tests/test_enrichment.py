@@ -1,6 +1,5 @@
 import asyncio
 import pytest
-from fastapi.testclient import TestClient
 
 
 def test_enrichments_table_exists(tmp_db):
