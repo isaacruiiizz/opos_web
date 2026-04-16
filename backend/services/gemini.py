@@ -5,6 +5,7 @@ import time
 import logging
 from datetime import date
 from google import genai
+from google.genai import types as genai_types
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
@@ -81,7 +82,12 @@ def get_usage_stats() -> dict:
 class GeminiService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY", "")
-        self.client = genai.Client(api_key=api_key)
+        # v1alpha exposes Gemma 4 and other preview models; all stable models
+        # (Gemma 2/3, Gemini 1.5/2.0) work on v1alpha too.
+        self.client = genai.Client(
+            api_key=api_key,
+            http_options=genai_types.HttpOptions(api_version="v1alpha"),
+        )
 
     @property
     def model(self) -> str:
@@ -128,6 +134,11 @@ class GeminiService:
                 raise HTTPException(
                     status_code=503,
                     detail="La IA està saturada temporalment. Torna a intentar-ho en uns segons."
+                )
+            if any(x in msg or x in etype for x in ("404", "NOT_FOUND")):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"El model '{self.model}' no suporta generació de contingut. Canvia el model a la configuració."
                 )
             raise HTTPException(status_code=500, detail=f"Error IA: {e}")
 
