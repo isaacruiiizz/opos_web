@@ -9,10 +9,16 @@
       </button>
     </div>
     <div v-else>
-      <button @click="emit('cancel', { current: score, total: total })"
-              class="mb-3 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-        ← Sortir
-      </button>
+      <div class="mb-3 flex justify-between">
+        <button @click="emit('cancel', { current: score, total: total })"
+                class="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          ← Sortir
+        </button>
+        <button @click="emit('done', score / total * 10)"
+                class="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700">
+          Finalitzar ✓
+        </button>
+      </div>
       <div class="grid grid-cols-2 gap-3">
       <div class="space-y-2">
         <p class="text-xs font-semibold uppercase text-gray-400 mb-2 text-center">Termes</p>

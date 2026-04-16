@@ -19,10 +19,16 @@
       </div>
     </div>
 
-    <button v-if="!checked" @click="emit('cancel', { inProgress: true })"
-            class="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-      ← Sortir
-    </button>
+    <div v-if="!checked" class="flex justify-between mb-2">
+      <button @click="emit('cancel', { inProgress: true })"
+              class="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        ← Sortir
+      </button>
+      <button @click="checked = true"
+              class="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700">
+        Finalitzar ✓
+      </button>
+    </div>
     <button v-if="!checked" data-check @click="checked = true"
             class="w-full py-3 bg-primary text-white rounded-2xl font-semibold">
       Comprovar

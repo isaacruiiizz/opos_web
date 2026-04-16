@@ -25,10 +25,16 @@
         L'IA avalua les respostes…
       </div>
       <template v-else>
-        <button @click="emit('cancel', { current: current, total: questions.length })"
-                class="mb-3 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-          ← Sortir
-        </button>
+        <div class="mb-3 flex justify-between">
+          <button @click="emit('cancel', { current: current, total: questions.length })"
+                  class="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+            ← Sortir
+          </button>
+          <button @click="submitAll"
+                  class="flex items-center gap-1 text-xs text-orange-500 hover:text-orange-700">
+            Finalitzar ✓
+          </button>
+        </div>
         <div class="mb-3 text-sm text-gray-400">Pregunta {{ current + 1 }} de {{ questions.length }}</div>
         <p class="font-semibold mb-3">{{ questions[current].pregunta }}</p>
         <textarea v-model="answers[current]" rows="5"

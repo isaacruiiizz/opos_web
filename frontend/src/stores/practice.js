@@ -2,9 +2,31 @@ import { defineStore } from 'pinia'
 import { reactive, computed } from 'vue'
 import { generatePractice } from '../api/client.js'
 
+const STORAGE_KEY = 'opos_practice_v1'
+
+function saveToStorage(cache, progress) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      cache: { ...cache },
+      progress: { ...progress },
+    }))
+  } catch {}
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return { cache: {}, progress: {} }
+    return JSON.parse(raw)
+  } catch {}
+  return { cache: {}, progress: {} }
+}
+
 export const usePracticeStore = defineStore('practice', () => {
+  const stored = loadFromStorage()
+
   // Generated content: `${topicId}__${mode}` → questions[] | suposit{}
-  const cache = reactive({})
+  const cache = reactive({ ...stored.cache })
   // Currently generating: key → true
   const generating = reactive({})
   // Error messages: key → string
@@ -12,12 +34,20 @@ export const usePracticeStore = defineStore('practice', () => {
   // Ready but not yet opened: key → true
   const ready = reactive({})
   // Per-topic mode progress badges: topicId → { mode → progressObj }
-  const progress = reactive({})
+  const progress = reactive({ ...stored.progress })
 
-  const key = (topicId, mode) => `${topicId}__${mode}`
+  // On load: mark cached items as ready only if no in-progress state saved
+  for (const k of Object.keys(stored.cache || {})) {
+    const [topicId, mode] = k.split('__')
+    if (!stored.progress?.[topicId]?.[mode]) {
+      ready[k] = true
+    }
+  }
 
   const anyGenerating = computed(() => Object.keys(generating).length > 0)
   const anyReady = computed(() => Object.keys(ready).length > 0)
+
+  const key = (topicId, mode) => `${topicId}__${mode}`
 
   function getContent(topicId, mode) {
     return cache[key(topicId, mode)] ?? null
@@ -48,6 +78,7 @@ export const usePracticeStore = defineStore('practice', () => {
     delete cache[k]
     delete ready[k]
     delete errors[k]
+    saveToStorage(cache, progress)
   }
 
   function getProgress(topicId) {
@@ -56,6 +87,7 @@ export const usePracticeStore = defineStore('practice', () => {
 
   function setProgress(topicId, mode, progressObj) {
     progress[topicId] = { ...(progress[topicId] || {}), [mode]: progressObj }
+    saveToStorage(cache, progress)
   }
 
   function clearProgress(topicId, mode) {
@@ -63,6 +95,7 @@ export const usePracticeStore = defineStore('practice', () => {
     const p = { ...progress[topicId] }
     delete p[mode]
     progress[topicId] = p
+    saveToStorage(cache, progress)
   }
 
   async function requestNotifications() {
@@ -93,6 +126,7 @@ export const usePracticeStore = defineStore('practice', () => {
       const data = await generatePractice(topicId, mode)
       cache[k] = data
       ready[k] = true
+      saveToStorage(cache, progress)
       sendNotification(mode)
     } catch (e) {
       errors[k] = e.response?.data?.detail || 'Error generant la pràctica. Torna a intentar-ho.'
