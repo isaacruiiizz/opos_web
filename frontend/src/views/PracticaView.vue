@@ -60,6 +60,9 @@ const errorMsg = ref(null)
 const modeLabels = { test: 'el test', breus: 'les preguntes breus', suposit: 'el supòsit', connecta: 'el connecta', buits: 'els espais en blanc' }
 const modeLabel = ref('')
 
+// Cache per tema: no fem nova petició si ja tenim les preguntes generades
+const sessionCache = new Map()
+
 async function startMode(mode) {
   activeMode.value = mode
   modeLabel.value = modeLabels[mode] || mode
@@ -79,6 +82,7 @@ async function startMode(mode) {
 }
 
 async function finishSession(score) {
+  sessionCache.delete(activeTopic.value)
   await saveSession({
     topic_id: activeTopic.value,
     mode: activeMode.value,
@@ -93,9 +97,26 @@ async function finishSession(score) {
   suposit.value = null
 }
 
-watch(activeTopic, () => {
-  activeMode.value = null
-  questions.value = []
+watch(activeTopic, (newId, oldId) => {
+  // Desa l'estat del tema anterior
+  if (oldId) {
+    sessionCache.set(oldId, {
+      activeMode: activeMode.value,
+      questions: questions.value,
+      suposit: suposit.value,
+    })
+  }
+  // Restaura l'estat del tema nou si existeix a la caché
+  const cached = sessionCache.get(newId)
+  if (cached?.activeMode) {
+    activeMode.value = cached.activeMode
+    questions.value = cached.questions
+    suposit.value = cached.suposit
+  } else {
+    activeMode.value = null
+    questions.value = []
+    suposit.value = null
+  }
 })
 </script>
 
