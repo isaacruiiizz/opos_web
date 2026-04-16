@@ -8,7 +8,7 @@ class GeminiService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY", "")
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemma-4-31b-it"
+        self.model = "gemma-3n-e2b-it"
 
     async def _generate_json(self, prompt: str) -> dict | list:
         try:
