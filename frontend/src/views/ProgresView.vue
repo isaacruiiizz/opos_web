@@ -43,7 +43,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import { fetchProgress, runPdfAnalysis } from '../api/client.js'
 import ProgressBar from '../components/progres/ProgressBar.vue'
 import ExamReadiness from '../components/progres/ExamReadiness.vue'
@@ -65,4 +65,5 @@ async function runPdf() {
 }
 
 onMounted(load)
+onActivated(load)
 </script>
