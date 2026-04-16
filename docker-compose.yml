@@ -1,0 +1,33 @@
+services:
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DB_PATH: /data/opos.db
+      NOTES_PATH: /data/ApuntsTemari.md
+      PDF_PATH: /data/EdicteC1Maçanet.pdf
+    volumes:
+      - ./data:/data
+    networks:
+      - opos-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - opos-net
+
+networks:
+  opos-net:
+    driver: bridge
