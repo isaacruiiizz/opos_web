@@ -1,5 +1,6 @@
 import asyncio
 import pytest
+from unittest.mock import AsyncMock, patch
 
 
 def test_enrichments_table_exists(tmp_db):
@@ -23,9 +24,6 @@ def test_enrichments_table_exists(tmp_db):
             assert row2 is not None, "topic_summaries table missing"
 
     asyncio.run(check())
-
-
-from unittest.mock import AsyncMock, patch
 
 
 def test_enrich_section_timeline(client):
