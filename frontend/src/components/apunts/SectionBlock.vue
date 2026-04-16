@@ -63,6 +63,21 @@
         <ConceptCards v-else-if="enrichment.type === 'cards'" :data="enrichment.data" />
         <ComparisonTable v-else-if="enrichment.type === 'table'" :data="enrichment.data" />
         <CalloutBoxes v-else-if="enrichment.type === 'callouts'" :data="enrichment.data" />
+
+        <!-- Text original col·lapsable -->
+        <div class="mt-3 border-t border-[var(--color-border)]">
+          <button @click="showRaw = !showRaw"
+                  class="flex items-center gap-1.5 text-[0.68rem] text-gray-400 hover:text-gray-600
+                         dark:hover:text-gray-300 transition-colors py-2 w-full text-left">
+            <svg class="transition-transform" :class="showRaw ? '' : '-rotate-90'"
+                 width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"/>
+            </svg>
+            {{ showRaw ? 'Amagar text original' : 'Veure text original' }}
+          </button>
+          <ProseContent v-if="showRaw" :content="markdown" />
+        </div>
       </template>
       <ProseContent v-else :content="markdown" />
     </div>
@@ -90,6 +105,7 @@ const props = defineProps({
 defineEmits(['enrich'])
 
 const open = ref(true)
+const showRaw = ref(false)
 
 function typeLabel(type) {
   const map = { timeline: 'Timeline', cards: 'Cards', table: 'Taula comparativa', callouts: 'Callouts' }
