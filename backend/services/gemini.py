@@ -7,7 +7,7 @@ class GeminiService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY", "")
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-2.0-flash"
+        self.model = "gemini-1.5-flash"
 
     async def _generate_json(self, prompt: str) -> dict | list:
         response = await self.client.aio.models.generate_content(
