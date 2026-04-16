@@ -26,3 +26,9 @@ export const resetProgress = async () => api.delete('/progress')
 export const fetchAIModels = async () => (await api.get('/ai/models')).data
 export const fetchAIStatus = async () => (await api.get('/ai/status')).data
 export const setAIModel = async (model) => (await api.post('/ai/model', { model })).data
+export const fetchEnrichments = async (topicId) => (await api.get(`/ai/enrichments/${topicId}`)).data
+export const saveEnrichment = async (topicId, sectionIdx, sectionMarkdown) =>
+  (await api.post('/ai/enrich', { topic_id: topicId, section_idx: sectionIdx, section_markdown: sectionMarkdown })).data
+export const fetchTopicSummary = async (topicId) => (await api.get(`/ai/summary/${topicId}`)).data
+export const generateTopicSummary = async (topicId, topicContent) =>
+  (await api.post('/ai/topic-summary', { topic_id: topicId, topic_content: topicContent })).data
