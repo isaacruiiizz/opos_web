@@ -1,16 +1,19 @@
 import os
 import re
 import json
-import google.generativeai as genai
+from google import genai
 
 class GeminiService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY", "")
-        genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-1.5-flash")
+        self.client = genai.Client(api_key=api_key)
+        self.model = "gemini-2.0-flash"
 
     async def _generate_json(self, prompt: str) -> dict | list:
-        response = await self.model.generate_content_async(prompt)
+        response = await self.client.aio.models.generate_content(
+            model=self.model,
+            contents=prompt,
+        )
         text = response.text.strip()
         text = re.sub(r"^```\w*\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
