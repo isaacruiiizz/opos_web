@@ -6,6 +6,7 @@ const routes = [
   { path: '/flash', component: () => import('../views/FlashcardsView.vue') },
   { path: '/practica', component: () => import('../views/PracticaView.vue') },
   { path: '/progres', component: () => import('../views/ProgresView.vue') },
+  { path: '/config', component: () => import('../views/SettingsView.vue') },
 ]
 
 export default createRouter({ history: createWebHistory(), routes })

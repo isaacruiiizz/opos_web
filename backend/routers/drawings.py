@@ -12,6 +12,12 @@ async def get_drawing(topic_id: str, db=Depends(get_db)):
     row = await cursor.fetchone()
     return {"canvas_json": row["canvas_json"] if row else "{}"}
 
+@router.delete("/api/drawings", status_code=204)
+async def clear_all_drawings(db=Depends(get_db)):
+    """Esborra tots els dibuixos."""
+    await db.execute("DELETE FROM drawings")
+
+
 @router.post("/api/topics/{topic_id}/drawings")
 async def save_drawing(topic_id: str, body: DrawingUpdate, db=Depends(get_db)):
     await db.execute(

@@ -60,6 +60,12 @@ async def generate_flashcards(topic_id: str, db=Depends(get_db)):
     )
     return [dict(r) for r in await cursor.fetchall()]
 
+@router.delete("/api/flashcards", status_code=204)
+async def clear_all_flashcards(db=Depends(get_db)):
+    """Esborra totes les targetes flash."""
+    await db.execute("DELETE FROM flashcards")
+
+
 @router.post("/api/flashcards/{card_id}/review")
 async def review_flashcard(card_id: int, body: FlashcardReview, db=Depends(get_db)):
     cursor = await db.execute("SELECT * FROM flashcards WHERE id=?", (card_id,))

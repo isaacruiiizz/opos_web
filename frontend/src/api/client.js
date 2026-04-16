@@ -32,3 +32,6 @@ export const saveEnrichment = async (topicId, sectionIdx, sectionMarkdown) =>
 export const fetchTopicSummary = async (topicId) => (await api.get(`/ai/summary/${topicId}`)).data
 export const generateTopicSummary = async (topicId, topicContent) =>
   (await api.post('/ai/topic-summary', { topic_id: topicId, topic_content: topicContent })).data
+export const clearEnrichments = async () => api.delete('/ai/enrichments')
+export const clearFlashcards = async () => api.delete('/flashcards')
+export const clearDrawings = async () => api.delete('/drawings')

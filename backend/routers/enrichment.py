@@ -62,6 +62,13 @@ async def get_summary(topic_id: str, db=Depends(get_db)):
     return {"summary": row["summary"], "chips": json.loads(row["chips_json"])}
 
 
+@router.delete("/enrichments", status_code=204)
+async def clear_enrichments(db=Depends(get_db)):
+    """Esborra tots els enriquiments i resums generats per IA."""
+    await db.execute("DELETE FROM topic_enrichments")
+    await db.execute("DELETE FROM topic_summaries")
+
+
 @router.post("/topic-summary")
 async def generate_summary(payload: SummaryRequest, db=Depends(get_db), gemini=Depends(get_gemini)):
     """Generate (or return cached) topic summary."""
