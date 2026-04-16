@@ -19,8 +19,8 @@
         </svg>
         Dibuix
       </button>
-      <div class="flex-1"></div>
-      <span class="text-xs text-gray-400 tabular-nums">{{ readingPct }}% llegit</span>
+      <span class="flex-1 text-sm font-semibold truncate max-w-[180px] text-center">{{ topicData?.title }}</span>
+      <span class="text-xs text-gray-400 tabular-nums">{{ readingPct }}%</span>
     </div>
 
     <!-- Reading progress bar -->

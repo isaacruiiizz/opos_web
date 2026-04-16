@@ -35,7 +35,10 @@
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           Enriquit
         </span>
-        <span v-if="error" class="text-[0.65rem] text-red-500 max-w-[120px] truncate">{{ error }}</span>
+        <span v-if="error" class="text-[0.65rem] text-red-500 flex items-center gap-1">
+          <span class="max-w-[100px] truncate">{{ error }}</span>
+          <a href="#" @click.prevent="$emit('enrich', index)" class="underline whitespace-nowrap">Tornar a intentar</a>
+        </span>
         <svg class="w-3.5 h-3.5 text-[#c4b5fd] transition-transform"
              :class="open ? '' : 'rotate-180'"
              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

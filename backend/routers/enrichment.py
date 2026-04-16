@@ -45,7 +45,6 @@ async def enrich_section(payload: EnrichmentCreate, db=Depends(get_db), gemini=D
         "INSERT OR REPLACE INTO topic_enrichments (topic_id, section_idx, type, data_json) VALUES (?,?,?,?)",
         (payload.topic_id, payload.section_idx, result["type"], json.dumps(result["data"]))
     )
-    await db.commit()
 
     return result
 
@@ -84,6 +83,5 @@ async def generate_summary(payload: SummaryRequest, db=Depends(get_db), gemini=D
         "INSERT OR REPLACE INTO topic_summaries (topic_id, summary, chips_json) VALUES (?,?,?)",
         (payload.topic_id, result["summary"], json.dumps(result["chips"]))
     )
-    await db.commit()
 
     return result

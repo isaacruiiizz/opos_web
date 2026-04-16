@@ -100,4 +100,9 @@ async def get_db_ctx():
 async def get_db():
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
-        yield db
+        try:
+            yield db
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise

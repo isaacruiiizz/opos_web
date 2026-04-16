@@ -12,6 +12,7 @@
 <script setup>
 import { computed } from 'vue'
 import { marked } from 'marked'
+import DOMPurify from 'dompurify'
 
 const props = defineProps({
   content: { type: String, default: '' }
@@ -22,6 +23,7 @@ const LAW_RE = new RegExp(`\\b(${LAW_REFS.join('|')})\\b`, 'g')
 
 const rendered = computed(() => {
   const html = marked.parse(props.content || '', { breaks: true, gfm: true })
-  return html.replace(LAW_RE, '<span class="law-ref">$1</span>')
+  const withBadges = html.replace(LAW_RE, '<span class="law-ref">$1</span>')
+  return DOMPurify.sanitize(withBadges, { ADD_TAGS: ['span'], ADD_ATTR: ['class'] })
 })
 </script>

@@ -9,7 +9,8 @@
       </thead>
       <tbody>
         <tr v-for="(row, i) in data.rows" :key="i"
-            class="border-b border-[var(--color-border)] last:border-0">
+            class="border-b border-[var(--color-border)] last:border-0"
+            :class="data.highlight?.includes(i) ? 'bg-[#faf5ff]' : ''">
           <td v-for="(cell, j) in row" :key="j"
               class="px-2.5 py-1.5"
               :class="cellClass(i, j)">
