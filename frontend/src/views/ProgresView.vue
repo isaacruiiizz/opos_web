@@ -38,6 +38,7 @@
                      hover:text-primary disabled:opacity-50">
         {{ pdfLoading ? 'Analitzant temari…' : '🔍 Analitzar cobertura del temari oficial' }}
       </button>
+      <AIConfig />
       <button @click="confirmReset"
               class="w-full py-3 border border-red-200 dark:border-red-800 rounded-2xl text-sm
                      font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
@@ -52,6 +53,7 @@ import { ref, onMounted, onActivated } from 'vue'
 import { fetchProgress, runPdfAnalysis, resetProgress } from '../api/client.js'
 import ProgressBar from '../components/progres/ProgressBar.vue'
 import ExamReadiness from '../components/progres/ExamReadiness.vue'
+import AIConfig from '../components/progres/AIConfig.vue'
 
 const progress = ref(null)
 const loading = ref(false)

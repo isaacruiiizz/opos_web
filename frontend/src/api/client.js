@@ -23,3 +23,6 @@ export const fetchPdfAnalysis = async () => (await api.get('/pdf/analysis')).dat
 export const fetchConfig = async () => (await api.get('/config')).data
 export const saveConfig = async (key, value) => (await api.post('/config', { key, value })).data
 export const resetProgress = async () => api.delete('/progress')
+export const fetchAIModels = async () => (await api.get('/ai/models')).data
+export const fetchAIStatus = async () => (await api.get('/ai/status')).data
+export const setAIModel = async (model) => (await api.post('/ai/model', { model })).data

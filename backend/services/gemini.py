@@ -1,14 +1,113 @@
 import os
 import re
 import json
+import time
+import logging
+from datetime import date
 from google import genai
 from fastapi import HTTPException
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Usage tracker (module-level, resets per minute and per day)
+# ---------------------------------------------------------------------------
+
+class UsageTracker:
+    def __init__(self):
+        self._reset_minute()
+        self._reset_day()
+
+    def _reset_minute(self):
+        self._minute_start = time.time()
+        self.req_minute = 0
+        self.tok_minute = 0
+
+    def _reset_day(self):
+        self._day = date.today()
+        self.req_day = 0
+        self.tok_day = 0
+
+    def record(self, tokens: int = 0):
+        if time.time() - self._minute_start >= 60:
+            self._reset_minute()
+        if date.today() != self._day:
+            self._reset_day()
+        self.req_minute += 1
+        self.tok_minute += tokens
+        self.req_day += 1
+        self.tok_day += tokens
+
+    def stats(self) -> dict:
+        if time.time() - self._minute_start >= 60:
+            self._reset_minute()
+        if date.today() != self._day:
+            self._reset_day()
+        return {
+            "req_minute": self.req_minute,
+            "tok_minute": self.tok_minute,
+            "req_day": self.req_day,
+            "tok_day": self.tok_day,
+            "minute_elapsed_s": int(time.time() - self._minute_start),
+        }
+
+
+# ---------------------------------------------------------------------------
+# Module-level model state (read from env, overrideable at runtime from DB)
+# ---------------------------------------------------------------------------
+
+_model: str = os.getenv("GEMINI_MODEL", "gemma-3n-e2b-it")
+_usage = UsageTracker()
+
+
+def get_current_model() -> str:
+    return _model
+
+
+def set_current_model(model: str):
+    global _model
+    _model = model
+    logger.info(f"Model canviat a: {model}")
+
+
+def get_usage_stats() -> dict:
+    return _usage.stats()
+
+
+# ---------------------------------------------------------------------------
+# GeminiService
+# ---------------------------------------------------------------------------
 
 class GeminiService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY", "")
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemma-3n-e2b-it"
+
+    @property
+    def model(self) -> str:
+        return _model
+
+    async def list_models(self) -> list[dict]:
+        """List available generative models from the API."""
+        try:
+            result = []
+            async for m in self.client.aio.models.list():
+                name = getattr(m, "name", "")
+                # Strip "models/" prefix if present
+                model_id = name.replace("models/", "") if name.startswith("models/") else name
+                if not model_id:
+                    continue
+                result.append({
+                    "id": model_id,
+                    "display_name": getattr(m, "display_name", model_id),
+                    "description": getattr(m, "description", ""),
+                    "input_token_limit": getattr(m, "input_token_limit", None),
+                    "output_token_limit": getattr(m, "output_token_limit", None),
+                })
+            return result
+        except Exception as e:
+            logger.warning(f"No s'ha pogut llistar models: {e}")
+            return []
 
     async def _generate_json(self, prompt: str) -> dict | list:
         try:
@@ -17,18 +116,26 @@ class GeminiService:
                 contents=prompt,
             )
         except Exception as e:
-            msg = str(e)
-            if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+            msg = str(e).upper()
+            etype = type(e).__name__.upper()
+            logger.error(f"Error IA [{etype}] model={self.model}: {e}")
+            if any(x in msg or x in etype for x in ("429", "RESOURCE_EXHAUSTED", "QUOTA", "RATELIMIT")):
                 raise HTTPException(
                     status_code=429,
                     detail="Massa sol·licituds a la IA. Espera 1 minut i torna a intentar-ho."
                 )
-            if "503" in msg or "UNAVAILABLE" in msg:
+            if any(x in msg or x in etype for x in ("503", "UNAVAILABLE", "OVERLOADED")):
                 raise HTTPException(
                     status_code=503,
                     detail="La IA està saturada temporalment. Torna a intentar-ho en uns segons."
                 )
             raise HTTPException(status_code=500, detail=f"Error IA: {e}")
+
+        # Track usage
+        usage = getattr(response, "usage_metadata", None)
+        total_tokens = getattr(usage, "total_token_count", 0) or 0
+        _usage.record(tokens=total_tokens)
+
         text = response.text.strip()
         text = re.sub(r"^```\w*\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
@@ -179,8 +286,12 @@ class GeminiService:
         return await self._generate_json(prompt)
 
 
+# ---------------------------------------------------------------------------
 # Singleton
+# ---------------------------------------------------------------------------
+
 _gemini: GeminiService | None = None
+
 
 def get_gemini() -> GeminiService:
     global _gemini
