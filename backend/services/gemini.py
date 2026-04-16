@@ -100,13 +100,18 @@ class GeminiService:
     async def evaluate_answer(self, pregunta: str, resposta_usuari: str,
                                resposta_model: str) -> dict:
         prompt = (
-            "Avalua la resposta de l'usuari per a un examen de tècnic C1 informàtica.\n"
-            "Puntua de 0 a 10. Retorna ÚNICAMENT JSON:\n"
-            '{"puntuacio": 7, "encerts": ["..."], "mancances": ["..."], '
-            '"feedback": "...", "puntuacio_justificada": "..."}\n'
+            "Ets un corrector estricte d'exàmens de tècnic C1 d'informàtica.\n"
+            "REGLES ESTRICTES:\n"
+            "1. El camp 'encerts' NOMÉS pot contenir conceptes que l'usuari hagi escrit EXPLÍCITAMENT. "
+            "Si un concepte no apareix a la resposta de l'usuari, NO pot ser un encert.\n"
+            "2. Si la resposta de l'usuari és buida, no relacionada o massa curta, la puntuació ha de ser 0 o 1.\n"
+            "3. La resposta model és referència per al corrector, mai per a l'usuari.\n"
+            "Retorna ÚNICAMENT JSON (sense text addicional):\n"
+            '{"puntuacio": 7, "encerts": ["concepte que l\'usuari ha mencionat"], '
+            '"mancances": ["concepte que faltava"], "feedback": "...", "puntuacio_justificada": "..."}\n'
             f"PREGUNTA: {pregunta}\n"
-            f"RESPOSTA USUARI: {resposta_usuari}\n"
-            f"RESPOSTA MODEL: {resposta_model}"
+            f"RESPOSTA DE L'USUARI (avalua NOMÉS això): {resposta_usuari}\n"
+            f"RESPOSTA MODEL (referència del corrector): {resposta_model}"
         )
         return await self._generate_json(prompt)
 
