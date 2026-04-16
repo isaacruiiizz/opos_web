@@ -4,7 +4,11 @@
     <Navbar />
     <TopicDrawer />
     <main class="flex-1 overflow-y-auto pb-16 pt-0">
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <keep-alive>
+          <component :is="Component" />
+        </keep-alive>
+      </RouterView>
     </main>
     <BottomTabBar />
   </div>
