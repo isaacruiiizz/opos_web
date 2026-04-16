@@ -217,6 +217,8 @@ class GeminiService:
 
     async def enrich_section(self, section_markdown: str) -> dict:
         """Analyse a section and return a visual enrichment JSON."""
+        if not section_markdown or not section_markdown.strip():
+            raise HTTPException(status_code=400, detail="La secció està buida.")
         prompt = (
             "Ets un expert en visualització de contingut per a oposicions. "
             "Analitza el text de la secció i genera una representació visual en JSON.\n\n"
@@ -234,7 +236,7 @@ class GeminiService:
             "  (icon valors: building, user, file, scale, shield, clock, globe, users, key, flag)\n"
             "callouts: {\"type\":\"callouts\",\"data\":[{\"variant\":\"law\",\"title\":\"...\",\"text\":\"...\"}]}\n"
             "  (variant valors: law=blau, important=groc, exam=verd)\n\n"
-            f"SECCIÓ:\n{section_markdown[:2000]}"
+            f"SECCIÓ:\n{section_markdown[:2000]}"  # sections are shorter; 2000 chars is sufficient
         )
         return await self._generate_json(prompt)
 
