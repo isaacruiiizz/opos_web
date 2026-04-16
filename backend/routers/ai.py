@@ -13,9 +13,11 @@ KNOWN_LIMITS: dict[str, dict] = {
     "gemma-3-4b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Petit"},
     "gemma-3-12b-it":        {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Mida mitjana"},
     "gemma-3-27b-it":        {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gran"},
-    # Gemma 4 models appear in the list API but don't support generateContent yet
+    # Gemma 4 models from list API — don't support generateContent
     "gemma-4-9b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 4 petit (no disponible)", "supported": False},
-    "gemma-4-27b-it":        {"rpm": 15,  "tpm": None,       "rpd": 1_500,  "desc": "Gemma 4 gran (no disponible)",  "supported": False},
+    "gemma-4-27b-it":        {"rpm": 15,  "tpm": None,       "rpd": 1_500,  "desc": "Gemma 4 27B (no disponible)",   "supported": False},
+    # Gemma 4 31B — not in list API but works for generateContent
+    "gemma-4-31b-it":        {"rpm": 15,  "tpm": None,       "rpd": 1_500,  "desc": "Gemma 4 31B, context il·limitat (lent)"},
     "gemma-2-9b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 2 petit"},
     "gemma-2-27b-it":        {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 2 gran"},
     "gemini-2.0-flash-lite": {"rpm": 30,  "tpm": 1_000_000,  "rpd": 1_500,  "desc": "Gemini Flash Lite"},
