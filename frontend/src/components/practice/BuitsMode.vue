@@ -19,6 +19,10 @@
       </div>
     </div>
 
+    <button v-if="!checked" @click="emit('cancel', { inProgress: true })"
+            class="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+      ← Sortir
+    </button>
     <button v-if="!checked" data-check @click="checked = true"
             class="w-full py-3 bg-primary text-white rounded-2xl font-semibold">
       Comprovar
@@ -36,7 +40,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 const props = defineProps({ sentences: Array, topicId: String })
-const emit = defineEmits(['done'])
+const emit = defineEmits(['done', 'cancel'])
 
 const answers = ref(props.sentences.map(() => ''))
 const checked = ref(false)

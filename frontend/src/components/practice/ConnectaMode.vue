@@ -8,7 +8,12 @@
         Tornar als modes
       </button>
     </div>
-    <div v-else class="grid grid-cols-2 gap-3">
+    <div v-else>
+      <button @click="emit('cancel', { current: score, total: total })"
+              class="mb-3 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        ← Sortir
+      </button>
+      <div class="grid grid-cols-2 gap-3">
       <div class="space-y-2">
         <p class="text-xs font-semibold uppercase text-gray-400 mb-2 text-center">Termes</p>
         <button v-for="(t, i) in shuffledTermes" :key="'t'+i"
@@ -27,6 +32,7 @@
           {{ d.definicio }}
         </button>
       </div>
+      </div>
     </div>
   </div>
 </template>
@@ -34,7 +40,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 const props = defineProps({ pairs: Array, topicId: String })
-const emit = defineEmits(['done'])
+const emit = defineEmits(['done', 'cancel'])
 
 function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5) }
 

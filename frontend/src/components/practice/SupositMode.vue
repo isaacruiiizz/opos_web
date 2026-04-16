@@ -29,6 +29,10 @@
     <div v-else>
       <div v-if="loading" class="text-center py-12 text-gray-400 animate-pulse">L'IA avalua…</div>
       <template v-else>
+        <button @click="emit('cancel', { inProgress: true })"
+                class="mb-3 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+          ← Sortir
+        </button>
         <div class="p-4 rounded-2xl bg-blue-50 dark:bg-blue-900/20 mb-4">
           <p class="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-2">Supòsit pràctic</p>
           <p class="text-sm font-medium">{{ suposit.enunciat }}</p>
@@ -57,7 +61,7 @@ import { ref } from 'vue'
 import { evaluateAnswer } from '../../api/client.js'
 
 const props = defineProps({ suposit: Object, topicId: String })
-const emit = defineEmits(['done'])
+const emit = defineEmits(['done', 'cancel'])
 
 const resposta = ref('')
 const evalResult = ref(null)

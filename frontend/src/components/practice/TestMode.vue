@@ -9,6 +9,10 @@
       </button>
     </div>
     <template v-else>
+      <button @click="emit('cancel', { current, total: questions.length })"
+              class="mb-3 flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+        ← Sortir
+      </button>
       <div class="mb-3 flex items-center justify-between text-sm text-gray-400">
         <span>Pregunta {{ current + 1 }} de {{ questions.length }}</span>
         <span class="font-semibold text-primary">{{ correctCount }} ✓</span>
@@ -41,7 +45,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 const props = defineProps({ questions: Array, topicId: String })
-const emit = defineEmits(['done'])
+const emit = defineEmits(['done', 'cancel'])
 
 const current = ref(0)
 const answered = ref(false)

@@ -20,22 +20,22 @@
       <p>{{ errorMsg }}</p>
       <button @click="errorMsg = null" class="mt-3 text-xs underline">Torna al selector</button>
     </div>
-    <ModeSelector v-else-if="!activeMode" @select="startMode" />
+    <ModeSelector v-else-if="!activeMode" :progress="modeProgress" @select="startMode" />
     <TestMode v-else-if="activeMode === 'test' && questions.length"
               :questions="questions" :topic-id="activeTopic"
-              @done="finishSession" />
+              @done="finishSession" @cancel="cancelMode" />
     <BreusMode v-else-if="activeMode === 'breus' && questions.length"
                :questions="questions" :topic-id="activeTopic"
-               @done="finishSession" />
+               @done="finishSession" @cancel="cancelMode" />
     <SupositMode v-else-if="activeMode === 'suposit' && suposit"
                  :suposit="suposit" :topic-id="activeTopic"
-                 @done="finishSession" />
+                 @done="finishSession" @cancel="cancelMode" />
     <ConnectaMode v-else-if="activeMode === 'connecta' && questions.length"
                   :pairs="questions" :topic-id="activeTopic"
-                  @done="finishSession" />
+                  @done="finishSession" @cancel="cancelMode" />
     <BuitsMode v-else-if="activeMode === 'buits' && questions.length"
                :sentences="questions" :topic-id="activeTopic"
-               @done="finishSession" />
+               @done="finishSession" @cancel="cancelMode" />
   </div>
 </template>
 
@@ -60,14 +60,25 @@ const errorMsg = ref(null)
 const modeLabels = { test: 'el test', breus: 'les preguntes breus', suposit: 'el supòsit', connecta: 'el connecta', buits: 'els espais en blanc' }
 const modeLabel = ref('')
 
-// Cache per tema: no fem nova petició si ja tenim les preguntes generades
+// { mode: { current, total } | { inProgress: true } }
+const modeProgress = ref({})
+
+// Cache per tema: { questions, suposit, modeProgress }
 const sessionCache = new Map()
 
 async function startMode(mode) {
+  errorMsg.value = null
+  // Resume from cache if available
+  const cached = sessionCache.get(activeTopic.value)
+  if (cached?.mode === mode && (cached.questions?.length || cached.suposit)) {
+    activeMode.value = mode
+    questions.value = cached.questions || []
+    suposit.value = cached.suposit || null
+    return
+  }
   activeMode.value = mode
   modeLabel.value = modeLabels[mode] || mode
   loading.value = true
-  errorMsg.value = null
   try {
     const data = await generatePractice(activeTopic.value, mode)
     if (mode === 'suposit') { suposit.value = data }
@@ -81,11 +92,28 @@ async function startMode(mode) {
   }
 }
 
+function cancelMode(progress) {
+  // Save current activity state so user can resume
+  sessionCache.set(activeTopic.value, {
+    mode: activeMode.value,
+    questions: questions.value,
+    suposit: suposit.value,
+  })
+  modeProgress.value = { ...modeProgress.value, [activeMode.value]: progress }
+  activeMode.value = null
+}
+
 async function finishSession(score) {
+  const mode = activeMode.value
+  // Clear cache and progress for this mode
   sessionCache.delete(activeTopic.value)
+  const newProgress = { ...modeProgress.value }
+  delete newProgress[mode]
+  modeProgress.value = newProgress
+
   await saveSession({
     topic_id: activeTopic.value,
-    mode: activeMode.value,
+    mode,
     score,
     questions_json: JSON.stringify(questions.value),
     answers_json: '[]',
@@ -98,26 +126,33 @@ async function finishSession(score) {
 }
 
 watch(activeTopic, (newId, oldId) => {
-  // Desa l'estat del tema anterior
-  if (oldId) {
+  if (oldId && activeMode.value) {
     sessionCache.set(oldId, {
-      activeMode: activeMode.value,
+      mode: activeMode.value,
       questions: questions.value,
       suposit: suposit.value,
     })
   }
-  // Restaura l'estat del tema nou si existeix a la caché
   const cached = sessionCache.get(newId)
-  if (cached?.activeMode) {
-    activeMode.value = cached.activeMode
-    questions.value = cached.questions
-    suposit.value = cached.suposit
+  if (cached?.mode) {
+    activeMode.value = cached.mode
+    questions.value = cached.questions || []
+    suposit.value = cached.suposit || null
   } else {
     activeMode.value = null
     questions.value = []
     suposit.value = null
   }
+  // Restore progress badges for new topic from cache
+  modeProgress.value = sessionCache.get(`progress_${newId}`) || {}
 })
+
+// Persist modeProgress per topic when switching
+watch(modeProgress, (val) => {
+  if (activeTopic.value) {
+    sessionCache.set(`progress_${activeTopic.value}`, { ...val })
+  }
+}, { deep: true })
 </script>
 
 <style scoped>
