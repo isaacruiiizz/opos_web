@@ -8,8 +8,14 @@
         T{{ t.number }}
       </button>
     </div>
-    <div v-if="loading" class="flex justify-center py-12">
-      <span class="animate-spin text-3xl">⏳</span>
+    <div v-if="loading" class="flex flex-col items-center justify-center py-16 gap-4">
+      <span class="text-4xl animate-spin">⏳</span>
+      <p class="text-sm text-gray-500">Generant amb IA, pot trigar uns segons…</p>
+    </div>
+    <div v-else-if="errorMsg" class="mx-4 mt-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm">
+      <p class="font-medium mb-1">No s'ha pogut generar</p>
+      <p>{{ errorMsg }}</p>
+      <button @click="errorMsg = null" class="mt-3 text-xs underline">Torna al selector</button>
     </div>
     <ModeSelector v-else-if="!activeMode" @select="startMode" />
     <TestMode v-else-if="activeMode === 'test' && questions.length"
@@ -47,15 +53,23 @@ const activeMode = ref(null)
 const questions = ref([])
 const suposit = ref(null)
 const loading = ref(false)
+const errorMsg = ref(null)
 
 async function startMode(mode) {
   activeMode.value = mode
   loading.value = true
+  errorMsg.value = null
   try {
     const data = await generatePractice(activeTopic.value, mode)
     if (mode === 'suposit') { suposit.value = data }
     else { questions.value = data }
-  } finally { loading.value = false }
+  } catch (e) {
+    const detail = e.response?.data?.detail
+    errorMsg.value = detail || 'Error generant la pràctica. Torna a intentar-ho.'
+    activeMode.value = null
+  } finally {
+    loading.value = false
+  }
 }
 
 async function finishSession(score) {
