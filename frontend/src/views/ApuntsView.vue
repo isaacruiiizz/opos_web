@@ -1,32 +1,25 @@
 <template>
   <div>
-    <!-- Sticky header sits below the fixed Navbar (h-14 = 56px) -->
-    <div class="sticky top-14 z-30 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
-      <div class="flex items-center gap-2 px-4 py-2">
-        <button @click="mode = 'text'"
-                :class="mode === 'text' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
-                class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
-          </svg>
-          Text
-        </button>
-        <button @click="mode = 'draw'"
-                :class="mode === 'draw' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
-                class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-          </svg>
-          Dibuix
-        </button>
-        <span class="flex-1 text-sm font-semibold truncate max-w-[180px] text-center">{{ topicData?.title }}</span>
-        <span class="text-xs text-gray-400 tabular-nums">{{ readingPct }}%</span>
-      </div>
-      <!-- Progress bar always visible at bottom of header -->
-      <div class="h-[3px] bg-[var(--color-border)]">
-        <div class="h-full bg-gradient-to-r from-primary to-blue-400 transition-[width] duration-150"
-             :style="{ width: readingPct + '%' }"></div>
-      </div>
+    <!-- Mode switcher (not sticky, just inline at top of content) -->
+    <div class="flex items-center gap-2 px-4 py-2 border-b border-[var(--color-border)]">
+      <button @click="mode = 'text'"
+              :class="mode === 'text' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
+              class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+        </svg>
+        Text
+      </button>
+      <button @click="mode = 'draw'"
+              :class="mode === 'draw' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
+              class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+        </svg>
+        Dibuix
+      </button>
+      <span class="flex-1 text-sm font-semibold truncate text-center">{{ topicData?.title }}</span>
+      <span class="text-xs text-gray-400 tabular-nums">{{ ui.readingPct }}%</span>
     </div>
 
     <!-- Loading -->
@@ -78,6 +71,7 @@
 <script setup>
 import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { useTopicsStore } from '../stores/topics.js'
+import { useUiStore } from '../stores/ui.js'
 import {
   fetchTopicContent,
   fetchEnrichments,
@@ -92,6 +86,7 @@ import SectionBlock from '../components/apunts/SectionBlock.vue'
 
 // ── state ──────────────────────────────────────────────────────────────────
 const topics = useTopicsStore()
+const ui = useUiStore()
 const topicData = ref(null)
 const loading = ref(false)
 const mode = ref('text')
@@ -101,7 +96,6 @@ const enrichLoading = reactive({})
 const enrichErrors = reactive({})
 const summary = ref(null)
 const summaryLoading = ref(false)
-const readingPct = ref(0)
 
 // ── section parser ─────────────────────────────────────────────────────────
 function parseSections(markdown) {
@@ -133,7 +127,7 @@ async function loadTopic(id) {
   Object.keys(enrichments).forEach(k => delete enrichments[k])
   Object.keys(enrichLoading).forEach(k => delete enrichLoading[k])
   Object.keys(enrichErrors).forEach(k => delete enrichErrors[k])
-  readingPct.value = 0
+  ui.readingPct = 0
 
   try {
     topicData.value = await fetchTopicContent(id)
@@ -173,13 +167,11 @@ async function handleEnrich(idx) {
   }
 }
 
-// ── scroll tracking ────────────────────────────────────────────────────────
-// The page scrolls on <html> (outer div is min-h-screen so it can grow).
-// Sticky header uses top-14 to sit below the fixed Navbar.
+// ── scroll tracking → stored in ui store so Navbar can read it ─────────────
 function onScroll() {
   const el = document.documentElement
   const scrollable = el.scrollHeight - el.clientHeight
-  readingPct.value = scrollable > 0 ? Math.round((el.scrollTop / scrollable) * 100) : 0
+  ui.readingPct = scrollable > 0 ? Math.round((el.scrollTop / scrollable) * 100) : 0
 }
 
 onMounted(() => {
@@ -188,6 +180,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('scroll', onScroll)
+  ui.readingPct = 0
 })
 
 watch(() => topics.activeTopicId, (id) => {

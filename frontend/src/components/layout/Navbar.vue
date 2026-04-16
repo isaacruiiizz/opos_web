@@ -28,13 +28,22 @@
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
       </svg>
     </button>
+    <!-- Reading progress bar — only on /apunts -->
+    <div v-if="isApunts" class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--color-border)]">
+      <div class="h-full bg-gradient-to-r from-primary to-blue-400 transition-[width] duration-150"
+           :style="{ width: ui.readingPct + '%' }"></div>
+    </div>
   </header>
   <div class="h-14" />
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useUiStore } from '../../stores/ui.js'
 import { useTopicsStore } from '../../stores/topics.js'
 const ui = useUiStore()
 const topics = useTopicsStore()
+const route = useRoute()
+const isApunts = computed(() => route.path === '/apunts')
 </script>

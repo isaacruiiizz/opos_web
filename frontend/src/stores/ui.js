@@ -5,6 +5,7 @@ export const useUiStore = defineStore('ui', () => {
   const systemPrefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
   const theme = ref(systemPrefersDark ? 'dark' : 'light')
   const drawerOpen = ref(false)
+  const readingPct = ref(0)
 
   function toggleTheme() {
     theme.value = theme.value === 'dark' ? 'light' : 'dark'
@@ -17,5 +18,5 @@ export const useUiStore = defineStore('ui', () => {
   // Apply theme on init
   document.documentElement.classList.toggle('dark', theme.value === 'dark')
 
-  return { theme, drawerOpen, toggleTheme, openDrawer, closeDrawer }
+  return { theme, drawerOpen, readingPct, toggleTheme, openDrawer, closeDrawer }
 })
