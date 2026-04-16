@@ -116,45 +116,56 @@ class GeminiService:
             logger.warning(f"No s'ha pogut llistar models: {e}")
             return []
 
+    _FALLBACK_MODEL = "gemini-2.0-flash-lite"
+
+    async def _call_model(self, model: str, prompt: str):
+        """Single attempt against a specific model. Raises on any error."""
+        return await self.client.aio.models.generate_content(
+            model=model,
+            contents=prompt,
+        )
+
     async def _generate_json(self, prompt: str) -> dict | list:
-        last_exc = None
-        for attempt in range(3):  # up to 3 attempts (0, 1, 2)
+        primary = self.model
+        response = None
+
+        # ── Try primary model up to 3 times ──────────────────────────────────
+        for attempt in range(3):
             try:
-                response = await self.client.aio.models.generate_content(
-                    model=self.model,
-                    contents=prompt,
-                )
-                break  # success
+                response = await self._call_model(primary, prompt)
+                break
             except Exception as e:
-                last_exc = e
                 msg = str(e).upper()
                 etype = type(e).__name__.upper()
-                logger.error(f"Error IA [{etype}] attempt={attempt+1} model={self.model}: {e}")
+                logger.error(f"Error IA [{etype}] attempt={attempt+1} model={primary}: {e}")
 
                 if any(x in msg or x in etype for x in ("429", "RESOURCE_EXHAUSTED", "QUOTA", "RATELIMIT")):
-                    raise HTTPException(
-                        status_code=429,
-                        detail="Massa sol·licituds a la IA. Espera 1 minut i torna a intentar-ho."
-                    )
+                    raise HTTPException(status_code=429,
+                        detail="Massa sol·licituds a la IA. Espera 1 minut i torna a intentar-ho.")
                 if any(x in msg or x in etype for x in ("404", "NOT_FOUND")):
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"El model '{self.model}' no suporta generació de contingut. Canvia el model a la configuració."
-                    )
-                # 500 INTERNAL or 503 UNAVAILABLE — retry with backoff
-                if any(x in msg or x in etype for x in ("500", "INTERNAL", "503", "UNAVAILABLE", "OVERLOADED")):
-                    if attempt < 2:
-                        wait = 3 * (attempt + 1)  # 3s, 6s
-                        logger.warning(f"Error transitori, reintentant en {wait}s…")
-                        await asyncio.sleep(wait)
-                        continue
-                    raise HTTPException(
-                        status_code=503,
-                        detail="La IA ha fallat repetidament. Torna a intentar-ho en uns moments."
-                    )
-                raise HTTPException(status_code=500, detail=f"Error IA: {e}")
-        else:
-            raise HTTPException(status_code=503, detail=f"Error IA persistent: {last_exc}")
+                    raise HTTPException(status_code=400,
+                        detail=f"El model '{primary}' no suporta generació. Canvia el model a Config.")
+
+                # 500/503 — retry with backoff
+                if attempt < 2:
+                    wait = 3 * (attempt + 1)
+                    logger.warning(f"Error transitori, reintentant en {wait}s…")
+                    await asyncio.sleep(wait)
+                    continue
+
+                # All retries exhausted — try fallback if different from primary
+                if primary != self._FALLBACK_MODEL:
+                    logger.warning(f"Model {primary} ha fallat 3 cops. Provant fallback {self._FALLBACK_MODEL}…")
+                    try:
+                        response = await self._call_model(self._FALLBACK_MODEL, prompt)
+                        logger.info(f"Fallback {self._FALLBACK_MODEL} OK")
+                    except Exception as fe:
+                        logger.error(f"Fallback també ha fallat: {fe}")
+                        raise HTTPException(status_code=503,
+                            detail=f"El model '{primary}' no respon. Canvia el model a Config → Model d'IA.")
+                else:
+                    raise HTTPException(status_code=503,
+                        detail="La IA ha fallat repetidament. Torna a intentar-ho en uns moments.")
 
         # Track usage
         usage = getattr(response, "usage_metadata", None)
