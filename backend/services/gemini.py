@@ -7,13 +7,16 @@ class GeminiService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY", "")
         self.client = genai.Client(api_key=api_key)
-        self.model = "gemini-1.5-flash"
+        self.model = "gemini-2.0-flash-lite"
 
     async def _generate_json(self, prompt: str) -> dict | list:
-        response = await self.client.aio.models.generate_content(
-            model=self.model,
-            contents=prompt,
-        )
+        try:
+            response = await self.client.aio.models.generate_content(
+                model=self.model,
+                contents=prompt,
+            )
+        except Exception as e:
+            raise RuntimeError(f"Gemini API error (model={self.model}): {e}") from e
         text = response.text.strip()
         text = re.sub(r"^```\w*\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
