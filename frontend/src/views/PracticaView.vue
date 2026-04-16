@@ -8,9 +8,12 @@
         T{{ t.number }}
       </button>
     </div>
-    <div v-if="loading" class="flex flex-col items-center justify-center py-16 gap-4">
-      <span class="text-4xl animate-spin">⏳</span>
-      <p class="text-sm text-gray-500">Generant amb IA, pot trigar uns segons…</p>
+    <div v-if="loading" class="flex flex-col items-center justify-center px-8 py-16 gap-6">
+      <p class="text-base font-medium">Generant {{ modeLabel }} amb IA…</p>
+      <div class="w-full max-w-sm h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <div class="h-full bg-primary rounded-full animate-progress" />
+      </div>
+      <p class="text-xs text-gray-400">Pot trigar entre 10 i 20 segons. No surtis de la pantalla.</p>
     </div>
     <div v-else-if="errorMsg" class="mx-4 mt-6 p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm">
       <p class="font-medium mb-1">No s'ha pogut generar</p>
@@ -54,9 +57,12 @@ const questions = ref([])
 const suposit = ref(null)
 const loading = ref(false)
 const errorMsg = ref(null)
+const modeLabels = { test: 'el test', breus: 'les preguntes breus', suposit: 'el supòsit', connecta: 'el connecta', buits: 'els espais en blanc' }
+const modeLabel = ref('')
 
 async function startMode(mode) {
   activeMode.value = mode
+  modeLabel.value = modeLabels[mode] || mode
   loading.value = true
   errorMsg.value = null
   try {
@@ -92,3 +98,15 @@ watch(activeTopic, () => {
   questions.value = []
 })
 </script>
+
+<style scoped>
+@keyframes progress {
+  0%   { width: 0% }
+  60%  { width: 80% }
+  90%  { width: 92% }
+  100% { width: 95% }
+}
+.animate-progress {
+  animation: progress 18s ease-out forwards;
+}
+</style>
