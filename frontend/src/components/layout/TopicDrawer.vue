@@ -35,6 +35,17 @@
           <span class="truncate">Tema {{ t.number }}: {{ t.title }}</span>
         </button>
       </section>
+      <section v-if="topics.importantsTopics.length" class="p-2">
+        <p class="text-xs font-semibold uppercase text-gray-400 px-2 py-1">Temes a tenir en compte</p>
+        <button v-for="(t, i) in topics.importantsTopics" :key="t.id"
+                @click="selectTopic(t.id)"
+                class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm
+                       hover:bg-primary/10 transition-colors"
+                :class="{ 'bg-primary/10 text-primary font-medium': topics.activeTopicId === t.id }">
+          <span class="text-base" :title="`${Math.round(t.overall_pct || 0)}%`">{{ progressDot(t.overall_pct) }}</span>
+          <span class="truncate">{{ i + 1 }}. {{ t.title }}</span>
+        </button>
+      </section>
     </aside>
   </Transition>
 </template>

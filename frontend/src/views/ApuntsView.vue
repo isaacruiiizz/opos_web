@@ -1,25 +1,23 @@
 <template>
   <div>
-    <!-- Mode switcher (not sticky, just inline at top of content) -->
-    <div class="flex items-center gap-2 px-4 py-2 border-b border-[var(--color-border)]">
+    <!-- Mode switcher: two equal-width buttons filling the bar -->
+    <div class="flex border-b border-[var(--color-border)]">
       <button @click="mode = 'text'"
-              :class="mode === 'text' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
-              class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
+              :class="mode === 'text' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
+              class="flex-1 py-2 text-sm font-medium transition-colors flex items-center justify-center gap-1.5">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
         </svg>
         Text
       </button>
       <button @click="mode = 'draw'"
-              :class="mode === 'draw' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'"
-              class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5">
+              :class="mode === 'draw' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300'"
+              class="flex-1 py-2 text-sm font-medium transition-colors flex items-center justify-center gap-1.5">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
         </svg>
         Dibuix
       </button>
-      <span class="flex-1 text-sm font-semibold truncate text-center">{{ topicData?.title }}</span>
-      <span class="text-xs text-gray-400 tabular-nums">{{ ui.readingPct }}%</span>
     </div>
 
     <!-- Loading -->

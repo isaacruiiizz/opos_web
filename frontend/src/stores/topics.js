@@ -8,6 +8,7 @@ export const useTopicsStore = defineStore('topics', () => {
 
   const generalTopics = computed(() => topics.value.filter(t => t.bloc === 'general'))
   const especificTopics = computed(() => topics.value.filter(t => t.bloc === 'especific'))
+  const importantsTopics = computed(() => topics.value.filter(t => t.bloc === 'importants'))
   const activeTopic = computed(() => topics.value.find(t => t.id === activeTopicId.value))
 
   async function loadTopics() {
@@ -26,6 +27,6 @@ export const useTopicsStore = defineStore('topics', () => {
     if (t) t.overall_pct = overall_pct
   }
 
-  return { topics, activeTopicId, activeTopic, generalTopics, especificTopics,
+  return { topics, activeTopicId, activeTopic, generalTopics, especificTopics, importantsTopics,
            loadTopics, setActiveTopic, updateTopicProgress }
 })

@@ -10,13 +10,15 @@ def parse_topics(path: Path) -> list[dict]:
     current_bloc = None
     current_topic = None
     current_lines: list[str] = []
-    counters = {"general": 0, "especific": 0}
+    counters = {"general": 0, "especific": 0, "importants": 0}
 
     for line in lines:
         if re.match(r"^## Bloc General", line):
             current_bloc = "general"
         elif re.match(r"^## Bloc Específic", line):
             current_bloc = "especific"
+        elif re.match(r"^## Temes a tenir en compte", line):
+            current_bloc = "importants"
         elif re.match(r"^### Tema \d+", line) and current_bloc:
             if current_topic is not None:
                 _finalise(current_topic, current_lines)
@@ -66,10 +68,18 @@ _cache: dict[Path, list[dict]] = {}
 
 def get_topics(path: Path) -> list[dict]:
     key = path.resolve()
-    if key not in _cache:
-        _cache[key] = parse_topics(path)
-    return _cache[key]
+    mtime = key.stat().st_mtime if key.exists() else 0
+    if key not in _cache or _cache[key][0] != mtime:
+        _cache[key] = (mtime, parse_topics(path))
+    return _cache[key][1]
 
 
 def get_topic_by_id(topic_id: str, path: Path) -> dict | None:
     return next((t for t in get_topics(path) if t["id"] == topic_id), None)
+
+
+def invalidate_cache(path: Path | None = None):
+    if path:
+        _cache.pop(path.resolve(), None)
+    else:
+        _cache.clear()
