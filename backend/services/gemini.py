@@ -5,8 +5,7 @@ import time
 import asyncio
 import logging
 from datetime import date
-from google import genai
-from google.genai import types as genai_types
+from groq import AsyncGroq
 from fastapi import HTTPException
 
 logger = logging.getLogger(__name__)
@@ -55,11 +54,49 @@ class UsageTracker:
 
 
 # ---------------------------------------------------------------------------
-# Module-level model state (read from env, overrideable at runtime from DB)
+# Module-level model state
 # ---------------------------------------------------------------------------
 
-_model: str = os.getenv("GEMINI_MODEL", "gemma-3n-e2b-it")
+_model: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 _usage = UsageTracker()
+
+GROQ_MODELS = [
+    {
+        "id": "llama-3.3-70b-versatile",
+        "display_name": "Llama 3.3 70B",
+        "description": "Millor qualitat, recomanat",
+        "rpm": 30, "tpm": 6_000, "rpd": 14_400,
+        "input_token_limit": 128_000, "output_token_limit": 32_768,
+    },
+    {
+        "id": "llama-3.1-70b-versatile",
+        "display_name": "Llama 3.1 70B",
+        "description": "Alta qualitat, 128K context",
+        "rpm": 30, "tpm": 6_000, "rpd": 14_400,
+        "input_token_limit": 128_000, "output_token_limit": 32_768,
+    },
+    {
+        "id": "llama-3.1-8b-instant",
+        "display_name": "Llama 3.1 8B",
+        "description": "Ràpid i lleuger",
+        "rpm": 30, "tpm": 20_000, "rpd": 14_400,
+        "input_token_limit": 128_000, "output_token_limit": 8_000,
+    },
+    {
+        "id": "gemma2-9b-it",
+        "display_name": "Gemma 2 9B",
+        "description": "Google Gemma 2, 8K context",
+        "rpm": 30, "tpm": 15_000, "rpd": 14_400,
+        "input_token_limit": 8_192, "output_token_limit": 8_192,
+    },
+    {
+        "id": "mixtral-8x7b-32768",
+        "display_name": "Mixtral 8x7B",
+        "description": "Mixtral MoE, 32K context",
+        "rpm": 30, "tpm": 5_000, "rpd": 14_400,
+        "input_token_limit": 32_768, "output_token_limit": 32_768,
+    },
+]
 
 
 def get_current_model() -> str:
@@ -77,52 +114,28 @@ def get_usage_stats() -> dict:
 
 
 # ---------------------------------------------------------------------------
-# GeminiService
+# GeminiService (nom mantingut per compatibilitat amb la resta de routers)
 # ---------------------------------------------------------------------------
 
 class GeminiService:
     def __init__(self):
-        api_key = os.getenv("GEMINI_API_KEY", "")
-        # v1alpha exposes Gemma 4 and other preview models; all stable models
-        # (Gemma 2/3, Gemini 1.5/2.0) work on v1alpha too.
-        self.client = genai.Client(
-            api_key=api_key,
-            http_options=genai_types.HttpOptions(api_version="v1alpha"),
-        )
+        api_key = os.getenv("GROQ_API_KEY", "")
+        self.client = AsyncGroq(api_key=api_key)
 
     @property
     def model(self) -> str:
         return _model
 
     async def list_models(self) -> list[dict]:
-        """List available generative models from the API."""
-        try:
-            result = []
-            async for m in self.client.aio.models.list():
-                name = getattr(m, "name", "")
-                # Strip "models/" prefix if present
-                model_id = name.replace("models/", "") if name.startswith("models/") else name
-                if not model_id:
-                    continue
-                result.append({
-                    "id": model_id,
-                    "display_name": getattr(m, "display_name", model_id),
-                    "description": getattr(m, "description", ""),
-                    "input_token_limit": getattr(m, "input_token_limit", None),
-                    "output_token_limit": getattr(m, "output_token_limit", None),
-                })
-            return result
-        except Exception as e:
-            logger.warning(f"No s'ha pogut llistar models: {e}")
-            return []
+        return GROQ_MODELS
 
-    _FALLBACK_MODEL = "gemini-2.0-flash-lite"
+    _FALLBACK_MODEL = "llama-3.1-8b-instant"
 
     async def _call_model(self, model: str, prompt: str):
-        """Single attempt against a specific model. Raises on any error."""
-        return await self.client.aio.models.generate_content(
+        return await self.client.chat.completions.create(
             model=model,
-            contents=prompt,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
         )
 
     async def _generate_json(self, prompt: str) -> dict | list:
@@ -139,12 +152,12 @@ class GeminiService:
                 etype = type(e).__name__.upper()
                 logger.error(f"Error IA [{etype}] attempt={attempt+1} model={primary}: {e}")
 
-                if any(x in msg or x in etype for x in ("429", "RESOURCE_EXHAUSTED", "QUOTA", "RATELIMIT")):
+                if any(x in msg or x in etype for x in ("429", "RATE_LIMIT", "RATELIMIT")):
                     raise HTTPException(status_code=429,
                         detail="Massa sol·licituds a la IA. Espera 1 minut i torna a intentar-ho.")
-                if any(x in msg or x in etype for x in ("404", "NOT_FOUND")):
+                if any(x in msg or x in etype for x in ("404", "NOT_FOUND", "MODEL_NOT_FOUND")):
                     raise HTTPException(status_code=400,
-                        detail=f"El model '{primary}' no suporta generació. Canvia el model a Config.")
+                        detail=f"El model '{primary}' no existeix. Canvia el model a Config.")
 
                 # 500/503 — retry with backoff
                 if attempt < 2:
@@ -153,7 +166,7 @@ class GeminiService:
                     await asyncio.sleep(wait)
                     continue
 
-                # All retries exhausted — try fallback if different from primary
+                # All retries exhausted — try fallback
                 if primary != self._FALLBACK_MODEL:
                     logger.warning(f"Model {primary} ha fallat 3 cops. Provant fallback {self._FALLBACK_MODEL}…")
                     try:
@@ -167,12 +180,11 @@ class GeminiService:
                     raise HTTPException(status_code=503,
                         detail="La IA ha fallat repetidament. Torna a intentar-ho en uns moments.")
 
-        # Track usage
-        usage = getattr(response, "usage_metadata", None)
-        total_tokens = getattr(usage, "total_token_count", 0) or 0
+        usage = getattr(response, "usage", None)
+        total_tokens = getattr(usage, "total_tokens", 0) or 0
         _usage.record(tokens=total_tokens)
 
-        text = response.text.strip()
+        text = response.choices[0].message.content.strip()
         text = re.sub(r"^```\w*\s*", "", text)
         text = re.sub(r"\s*```$", "", text)
         try:
@@ -201,7 +213,7 @@ class GeminiService:
             "La teva tasca és generar preguntes tipus test per a un examen de tècnic C1 d'informàtica.\n"
             "REGLES OBLIGATÒRIES:\n"
             "1. Basa't ÚNICAMENT en el contingut proporcionat. NO inventes informació.\n"
-            "2. La resposta correcta ha d'estar clarament justificada pel contingut donat.\n"
+            "2. La resposta correcta ha d'estat clarament justificada pel contingut donat.\n"
             "3. Les opcions incorrectes han de ser plausibles però clarament errònies segons el text.\n"
             "4. Genera EXACTAMENT 10 preguntes, ni més ni menys.\n"
             "5. El camp 'correcta' ha de ser una sola lletra: A, B, C o D.\n"
@@ -252,7 +264,6 @@ class GeminiService:
         return await self._generate_json(prompt)
 
     async def enrich_section(self, section_markdown: str) -> dict:
-        """Analyse a section and return a visual enrichment JSON."""
         if not section_markdown or not section_markdown.strip():
             raise HTTPException(status_code=400, detail="La secció està buida.")
         prompt = (
@@ -285,7 +296,6 @@ class GeminiService:
         return await self._generate_json(prompt)
 
     async def generate_topic_summary(self, topic_content: str) -> dict:
-        """Generate a short summary and concept chips for a topic."""
         prompt = (
             "Ets un expert en preparació d'oposicions. "
             "Llegeix el text del tema i genera un resum visual.\n\n"

@@ -5,24 +5,13 @@ from pydantic import BaseModel
 
 router = APIRouter(tags=["ai"])
 
-# Known free-tier limits for Google AI Studio (RPM / TPM / RPD)
-# None = il·limitat o desconegut
+# Known free-tier limits for Groq (RPM / TPM / RPD)
 KNOWN_LIMITS: dict[str, dict] = {
-    "gemma-3n-e2b-it":       {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Petit i ràpid"},
-    "gemma-3-1b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Molt petit"},
-    "gemma-3-4b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Petit"},
-    "gemma-3-12b-it":        {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Mida mitjana"},
-    "gemma-3-27b-it":        {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gran"},
-    # Gemma 4 models from list API — don't support generateContent
-    "gemma-4-9b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 4 petit (no disponible)", "supported": False},
-    "gemma-4-27b-it":        {"rpm": 15,  "tpm": None,       "rpd": 1_500,  "desc": "Gemma 4 27B (no disponible)",   "supported": False},
-    # Gemma 4 31B — not in list API but works for generateContent
-    "gemma-4-31b-it":        {"rpm": 15,  "tpm": None,       "rpd": 1_500,  "desc": "Gemma 4 31B, context il·limitat (lent)"},
-    "gemma-2-9b-it":         {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 2 petit"},
-    "gemma-2-27b-it":        {"rpm": 30,  "tpm": 15_000,     "rpd": 14_400, "desc": "Gemma 2 gran"},
-    "gemini-2.0-flash-lite": {"rpm": 30,  "tpm": 1_000_000,  "rpd": 1_500,  "desc": "Gemini Flash Lite"},
-    "gemini-1.5-flash":      {"rpm": 15,  "tpm": 1_000_000,  "rpd": 1_500,  "desc": "Gemini 1.5 Flash"},
-    "gemini-1.5-flash-8b":   {"rpm": 15,  "tpm": 1_000_000,  "rpd": 1_500,  "desc": "Gemini 1.5 Flash 8B"},
+    "llama-3.3-70b-versatile": {"rpm": 30, "tpm": 6_000,  "rpd": 14_400, "desc": "Millor qualitat, recomanat"},
+    "llama-3.1-70b-versatile": {"rpm": 30, "tpm": 6_000,  "rpd": 14_400, "desc": "Alta qualitat, 128K context"},
+    "llama-3.1-8b-instant":    {"rpm": 30, "tpm": 20_000, "rpd": 14_400, "desc": "Ràpid i lleuger"},
+    "gemma2-9b-it":            {"rpm": 30, "tpm": 15_000, "rpd": 14_400, "desc": "Google Gemma 2, 8K context"},
+    "mixtral-8x7b-32768":      {"rpm": 30, "tpm": 5_000,  "rpd": 14_400, "desc": "Mixtral MoE, 32K context"},
 }
 
 
