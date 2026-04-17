@@ -34,7 +34,7 @@
         </p>
 
         <!-- Limits del model seleccionat -->
-        <div v-if="currentModelInfo" class="grid grid-cols-3 gap-2 text-xs text-center">
+        <div v-if="currentModelInfo" class="grid grid-cols-2 gap-2 text-xs text-center">
           <div class="rounded-lg bg-gray-100 dark:bg-gray-800 p-2">
             <p class="font-bold text-primary">{{ currentModelInfo.rpm ?? '?' }}</p>
             <p class="text-gray-400">req/min</p>
@@ -50,6 +50,12 @@
               {{ currentModelInfo.rpd ? currentModelInfo.rpd.toLocaleString() : '?' }}
             </p>
             <p class="text-gray-400">req/dia</p>
+          </div>
+          <div class="rounded-lg bg-gray-100 dark:bg-gray-800 p-2">
+            <p class="font-bold text-primary">
+              {{ currentModelInfo.input_token_limit ? (currentModelInfo.input_token_limit / 1000) + 'K' : '?' }}
+            </p>
+            <p class="text-gray-400">context</p>
           </div>
         </div>
       </template>
@@ -120,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { fetchAIModels, fetchAIStatus, setAIModel } from '../../api/client.js'
 
 const models = ref([])
@@ -171,5 +177,20 @@ function usageColor(used, limit) {
   return 'bg-primary'
 }
 
-onMounted(loadData)
+let pollInterval = null
+
+async function refreshStatus() {
+  try {
+    status.value = await fetchAIStatus()
+  } catch {}
+}
+
+onMounted(() => {
+  loadData()
+  pollInterval = setInterval(refreshStatus, 10_000)
+})
+
+onUnmounted(() => {
+  clearInterval(pollInterval)
+})
 </script>
