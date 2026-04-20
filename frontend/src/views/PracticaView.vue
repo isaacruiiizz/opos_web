@@ -1,5 +1,22 @@
 <template>
   <div>
+    <!-- Simulacre d'Examen (sempre a dalt, independent del tema) -->
+    <SimulacreCard
+      :last-result="simulacre.lastResult"
+      :generating="simulacre.generating"
+      :has-draft="hasDraft"
+      :error="simulacre.error"
+      @start="startSimulacre"
+    />
+
+    <!-- Divisor -->
+    <div class="flex items-center gap-3 px-4 py-2">
+      <div class="flex-1 h-px bg-[var(--color-border)]"></div>
+      <span class="text-xs text-[var(--color-text-muted)] font-medium">Pràctica per tema</span>
+      <div class="flex-1 h-px bg-[var(--color-border)]"></div>
+    </div>
+
+    <!-- Selector de tema -->
     <div class="overflow-x-auto flex gap-2 px-4 py-2 border-b border-[var(--color-border)]">
       <button v-for="t in topics.topics" :key="t.id"
               @click="activeTopic = t.id"
@@ -35,9 +52,12 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useTopicsStore } from '../stores/topics.js'
 import { usePracticeStore } from '../stores/practice.js'
+import { useSimulacreStore } from '../stores/simulacre.js'
 import { saveSession } from '../api/client.js'
+import SimulacreCard from '../components/practice/SimulacreCard.vue'
 import ModeSelector from '../components/practice/ModeSelector.vue'
 import TestMode from '../components/practice/TestMode.vue'
 import BreusMode from '../components/practice/BreusMode.vue'
@@ -47,12 +67,24 @@ import BuitsMode from '../components/practice/BuitsMode.vue'
 
 const MODES = ['test', 'breus', 'suposit', 'connecta', 'buits']
 
+const router = useRouter()
 const topics = useTopicsStore()
 const practice = usePracticeStore()
+const simulacre = useSimulacreStore()
+
 const activeTopic = ref(topics.activeTopicId)
 const activeMode = ref(null)
 const questions = ref([])
 const suposit = ref(null)
+
+const hasDraft = computed(() => {
+  try {
+    const raw = sessionStorage.getItem('opos_simulacre_v1')
+    if (!raw) return false
+    const draft = JSON.parse(raw)
+    return !!(draft?.questions?.length && draft?.timeRemaining > 0)
+  } catch { return false }
+})
 
 const modeGenerating = computed(() => {
   return Object.fromEntries(MODES.map(m => [m, practice.isGenerating(activeTopic.value, m)]))
@@ -67,13 +99,21 @@ const modeErrors = computed(() => {
   )
 })
 
+simulacre.loadLastResult()
+
+async function startSimulacre() {
+  await simulacre.startGeneration()
+  if (simulacre.phase === 'exam') {
+    router.push('/simulacre')
+  }
+}
+
 async function startMode(mode) {
   await practice.requestNotifications()
   practice.clearError(activeTopic.value, mode)
 
   const content = practice.getContent(activeTopic.value, mode)
   if (content) {
-    // Content already generated — go directly, no loading screen
     practice.markSeen(activeTopic.value, mode)
     activeMode.value = mode
     if (mode === 'suposit') suposit.value = content
@@ -81,9 +121,8 @@ async function startMode(mode) {
     return
   }
 
-  if (practice.isGenerating(activeTopic.value, mode)) return  // already running in background
+  if (practice.isGenerating(activeTopic.value, mode)) return
 
-  // Launch background generation — user is free to navigate away
   practice.generate(activeTopic.value, mode)
 }
 
@@ -110,7 +149,6 @@ async function finishSession(score) {
   suposit.value = null
 }
 
-// Switching topic always returns to the mode selector
 watch(activeTopic, () => {
   activeMode.value = null
   questions.value = []
