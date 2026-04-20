@@ -190,7 +190,9 @@ class GeminiService:
         text = re.sub(r"\s*```$", "", text)
         try:
             return json.loads(text)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as je:
+            print(f"[JSON ERROR] pos={je.pos} msg={je.msg}", flush=True)
+            print(f"[JSON RAW] {repr(text[:500])}", flush=True)
             raise HTTPException(status_code=500, detail="La IA ha retornat una resposta invàlida. Torna a intentar-ho.")
 
     async def generate_flashcards(self, topic_text: str, topic_name: str) -> list[dict]:
