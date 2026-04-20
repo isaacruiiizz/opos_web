@@ -153,7 +153,7 @@ class GeminiService:
                 etype = type(e).__name__.upper()
                 logger.error(f"Error IA [{etype}] attempt={attempt+1} model={primary}: {e}")
 
-                if any(x in msg or x in etype for x in ("429", "RATE_LIMIT", "RATELIMIT")):
+                if any(x in msg or x in etype for x in ("413", "429", "RATE_LIMIT", "RATELIMIT")):
                     raise HTTPException(status_code=429,
                         detail="Massa sol·licituds a la IA. Espera 1 minut i torna a intentar-ho.")
                 if any(x in msg or x in etype for x in ("404", "NOT_FOUND", "MODEL_NOT_FOUND")):
@@ -433,20 +433,19 @@ class GeminiService:
                 "\"mancances\":[\"concepte que faltava\"],\"comentari\":\"...\"}]\n\n"
                 f"RESPOSTES A AVALUAR:\n{items_text}"
             )
-            result = await self._generate_json(prompt)
+            result = await self._generate_json(prompt, max_tokens=1500)
             if not isinstance(result, list):
                 return [{"id": a["id"], "factor": 0.0, "encerts": [], "mancances": [], "comentari": "Error d'avaluació"} for a in batch]
             return result
 
-        if len(answers) <= 10:
-            return await _evaluate_batch(answers)
-
-        lot1 = answers[:10]
-        lot2 = answers[10:]
-        results1 = await _evaluate_batch(lot1)
-        await asyncio.sleep(15)
-        results2 = await _evaluate_batch(lot2)
-        return results1 + results2
+        BATCH = 5
+        all_results = []
+        for i in range(0, len(answers), BATCH):
+            if i > 0:
+                await asyncio.sleep(12)
+            batch_result = await _evaluate_batch(answers[i:i + BATCH])
+            all_results.extend(batch_result)
+        return all_results
 
     async def evaluate_answer(self, pregunta: str, resposta_usuari: str,
                                resposta_model: str) -> dict:
