@@ -378,7 +378,7 @@ class GeminiService:
             "\"explicacio\":\"...\",\"penalitza\":false}]\n"
             f"TEMES:\n{temes_text}"
         )
-        result = await self._generate_json(prompt, model="llama-3.1-8b-instant", max_tokens=4500)
+        result = await self._generate_json(prompt, model="llama-3.1-8b-instant", max_tokens=4200)
         if not isinstance(result, list):
             raise HTTPException(status_code=500, detail="La IA no ha retornat una llista de preguntes.")
         valid = [q for q in result if isinstance(q, dict) and "id" in q and "tipus" in q and "enunciat" in q]
