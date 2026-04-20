@@ -5,6 +5,8 @@ const routes = [
   { path: '/apunts', component: () => import('../views/ApuntsView.vue') },
   { path: '/flash', component: () => import('../views/FlashcardsView.vue') },
   { path: '/practica', component: () => import('../views/PracticaView.vue') },
+  { path: '/simulacre', component: () => import('../views/SimulacreView.vue') },
+  { path: '/simulacre/resultats', component: () => import('../views/SimulacreResultsView.vue') },
   { path: '/progres', component: () => import('../views/ProgresView.vue') },
   { path: '/config', component: () => import('../views/SettingsView.vue') },
 ]
