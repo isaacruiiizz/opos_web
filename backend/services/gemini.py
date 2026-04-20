@@ -138,8 +138,8 @@ class GeminiService:
             temperature=0.3,
         )
 
-    async def _generate_json(self, prompt: str) -> dict | list:
-        primary = self.model
+    async def _generate_json(self, prompt: str, model: str | None = None) -> dict | list:
+        primary = model or self.model
         response = None
 
         # ── Try primary model up to 3 times ──────────────────────────────────
@@ -388,7 +388,7 @@ class GeminiService:
             "]\n\n"
             f"LLISTA DE 30 TEMES (títol: resum clau):\n{temes_text}"
         )
-        result = await self._generate_json(prompt)
+        result = await self._generate_json(prompt, model="llama-3.1-8b-instant")
         if not isinstance(result, list):
             raise HTTPException(status_code=500, detail="La IA no ha retornat una llista de preguntes.")
         valid = [q for q in result if isinstance(q, dict) and "id" in q and "tipus" in q and "enunciat" in q]

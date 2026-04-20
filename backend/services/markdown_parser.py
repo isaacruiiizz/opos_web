@@ -100,5 +100,5 @@ def extract_flash_check(content: str) -> str:
                 break
             result.append(line)
     if result:
-        return " ".join(" ".join(result).split())[:400]
-    return " ".join(content.split())[:300]
+        return " ".join(" ".join(result).split())[:200]
+    return " ".join(content.split())[:150]
