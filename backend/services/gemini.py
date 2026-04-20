@@ -423,11 +423,15 @@ class GeminiService:
             )
             prompt = (
                 "Corrector estricte oposicions C1 informàtica. Avalua cada resposta.\n"
-                "factor: 0.0=absent/incorrecta, 0.5=parcial, 1.0=correcta.\n"
-                "NO atribueixis conceptes no escrits explícitament per l'usuari.\n"
-                "IMPORTANT: comentari màx 10 paraules. encerts/mancances màx 2 items cadascun.\n"
+                "factor: 0.0=absent/incorrecta, 0.5=parcial (menciona alguns conceptes però falta coherència), 1.0=correcta (menciona els conceptes clau amb coherència).\n"
+                "REGLES IMPORTANTS:\n"
+                "- Llegeix la resposta de l'usuari sencera i valora el que ha escrit.\n"
+                "- Si l'usuari menciona conceptes correctes, reconeix-los als encerts.\n"
+                "- NO atribueixis conceptes no escrits explícitament per l'usuari.\n"
+                "- comentari: 1-2 frases concretes explicant per qué aquell factor. Màx 30 paraules.\n"
+                "- encerts/mancances: màx 3 items cadascun, breus.\n"
                 "Respon ÚNICAMENT JSON sense text extra:\n"
-                "[{\"id\":1,\"factor\":0.5,\"encerts\":[\"X\"],\"mancances\":[\"Y\"],\"comentari\":\"Breu.\"}]\n\n"
+                "[{\"id\":1,\"factor\":0.5,\"encerts\":[\"X\"],\"mancances\":[\"Y\"],\"comentari\":\"Explica el perquè del factor.\"}]\n\n"
                 f"RESPOSTES A AVALUAR:\n{items_text}"
             )
             result = await self._generate_json(prompt, max_tokens=2000)

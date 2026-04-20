@@ -208,6 +208,64 @@ export const useSimulacreStore = defineStore('simulacre', () => {
     evaluating.value = false
   }
 
+  async function reEvaluate() {
+    if (!results.value) return
+    evaluating.value = true
+    error.value = null
+    const qs = results.value.questions.filter(q => q.tipus !== 'test')
+    const openAnswers = qs.map(q => ({
+      id: q.id,
+      enunciat: q.enunciat,
+      resposta_usuari: results.value.answers[q.id]?.value || '',
+      resposta_model: q.resposta_model || '',
+      rubrica: q.rubrica || '',
+      punts: q.punts,
+    }))
+    let evaluations = []
+    try {
+      const data = await evaluateSimulacre(openAnswers)
+      evaluations = data.evaluations || []
+    } catch (e) {
+      error.value = e.response?.data?.detail || 'Error reavaluant. Torna a intentar-ho.'
+      evaluating.value = false
+      return
+    }
+    const evalMap = {}
+    for (const ev of evaluations) evalMap[ev.id] = ev
+    const updatedAnswers = { ...results.value.answers }
+    let breusScore = 0, breusTotal = 0, supositScore = 0, supositTotal = 0
+    for (const q of qs) {
+      const ev = evalMap[q.id]
+      const factor = ev ? ev.factor : (updatedAnswers[q.id]?.evaluation?.factor ?? 0)
+      const earned = q.punts * factor
+      if (q.tipus === 'breu') { breusScore += earned; breusTotal += q.punts }
+      else { supositScore += earned; supositTotal += q.punts }
+      if (updatedAnswers[q.id] && ev) {
+        updatedAnswers[q.id] = { ...updatedAnswers[q.id], points_earned: earned, evaluation: ev }
+      }
+    }
+    const testPoints = results.value.questions
+      .filter(q => q.tipus === 'test')
+      .reduce((s, q) => s + (results.value.answers[q.id]?.points_earned || 0), 0)
+    const testMaxPoints = results.value.questions
+      .filter(q => q.tipus === 'test')
+      .reduce((s, q) => s + q.punts, 0)
+    const totalEarned = testPoints + breusScore + supositScore
+    const totalMax = testMaxPoints + breusTotal + supositTotal
+    const score = totalMax > 0 ? Math.round((totalEarned / totalMax) * 100) / 10 : 0
+    results.value = {
+      ...results.value,
+      score,
+      passed: score >= 5.0,
+      breusScore: Math.round(breusScore * 100) / 100,
+      breusTotal: Math.round(breusTotal * 100) / 100,
+      supositScore: Math.round(supositScore * 100) / 100,
+      supositTotal: Math.round(supositTotal * 100) / 100,
+      answers: updatedAnswers,
+    }
+    evaluating.value = false
+  }
+
   function reset() {
     questions.value = []
     answers.value = {}
@@ -223,6 +281,6 @@ export const useSimulacreStore = defineStore('simulacre', () => {
     results, lastResult, phase,
     totalQuestions, answeredCount, testQuestions, openQuestions,
     loadLastResult, startGeneration, answerTest, answerOpen,
-    tickTimer, submitExam, reset, persistDraft,
+    tickTimer, submitExam, reEvaluate, reset, persistDraft,
   }
 })

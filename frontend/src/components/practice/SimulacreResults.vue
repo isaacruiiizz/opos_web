@@ -61,6 +61,15 @@
     </div>
 
     <!-- Correcció detallada -->
+    <!-- Re-avaluar -->
+<div v-if="simulacre.error" class="mb-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 text-xs text-red-700 dark:text-red-300">
+      ⚠️ {{ simulacre.error }}
+    </div>
+    <button @click="$emit('re-evaluate')"
+            class="w-full mb-4 py-2 rounded-lg border border-[var(--color-border)] text-xs text-[var(--color-text-muted)] active:scale-95 transition-all">
+      🔄 Tornar a avaluar respostes obertes amb IA
+    </button>
+
     <div v-if="showDetail" class="space-y-4">
       <h3 class="font-bold text-sm text-[var(--color-text)]">Correcció detallada</h3>
       <div v-for="q in results.questions" :key="q.id" class="rounded-lg border border-[var(--color-border)] overflow-hidden">
@@ -111,9 +120,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useSimulacreStore } from '../../stores/simulacre.js'
 
 const props = defineProps({ results: { type: Object, required: true } })
-defineEmits(['new-exam'])
+defineEmits(['new-exam', 're-evaluate'])
+const simulacre = useSimulacreStore()
 
 const showDetail = ref(false)
 

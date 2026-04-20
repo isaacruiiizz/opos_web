@@ -9,7 +9,7 @@
       <p class="text-xs text-[var(--color-text-muted)]">Pot trigar fins a 30 segons</p>
     </div>
     <div v-else-if="simulacre.results">
-      <SimulacreResults :results="simulacre.results" @new-exam="startNew" />
+      <SimulacreResults :results="simulacre.results" @new-exam="startNew" @re-evaluate="simulacre.reEvaluate()" />
     </div>
     <div v-else class="text-center py-12 text-[var(--color-text-muted)] text-sm">
       No hi ha cap resultat.
