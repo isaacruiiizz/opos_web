@@ -354,12 +354,12 @@ class GeminiService:
             for i, t in enumerate(temes)
         )
         prompt = (
-            "Tribunal oposicions C1 informàtica ajuntament català. Genera array JSON de 40 preguntes.\n"
+            "Tribunal oposicions C1 informàtica ajuntament català. Genera array JSON de 25 preguntes.\n"
             f"Seed variació: {seed}\n"
             "REGLES:\n"
-            "- Cobreix tots els temes, màx 2 preguntes per tema.\n"
+            "- Cobreix la majoria de temes, màx 2 preguntes per tema.\n"
             "- Aplica conceptes a situacions reals d'ajuntament petit (Maçanet de la Selva).\n"
-            "- Distribució: 20 test + 15 breu + 5 suposit = 40 total.\n"
+            "- Distribució: 12 test + 10 breu + 3 suposit = 25 total.\n"
             "- test: 4 opcions A/B/C/D, penalitza:-1/3, punts:0.25.\n"
             "- breu: resposta 2-4 frases, punts:0.5.\n"
             "- suposit: cas real TIC, punts:1.0.\n"
@@ -382,8 +382,8 @@ class GeminiService:
         if not isinstance(result, list):
             raise HTTPException(status_code=500, detail="La IA no ha retornat una llista de preguntes.")
         valid = [q for q in result if isinstance(q, dict) and "id" in q and "tipus" in q and "enunciat" in q]
-        if len(valid) < 20:
-            raise HTTPException(status_code=500, detail=f"La IA ha retornat massa poques preguntes vàlides ({len(valid)}/40).")
+        if len(valid) < 15:
+            raise HTTPException(status_code=500, detail=f"La IA ha retornat massa poques preguntes vàlides ({len(valid)}/25).")
         return valid
 
     async def evaluate_simulacre_answers(self, answers: list[dict]) -> list[dict]:
