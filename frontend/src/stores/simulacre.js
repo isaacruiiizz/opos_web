@@ -3,6 +3,22 @@ import { ref, computed } from 'vue'
 import { generateSimulacre, evaluateSimulacre, saveSimulacre, fetchLastSimulacre } from '../api/client.js'
 
 const STORAGE_KEY = 'opos_simulacre_v1'
+const RESULTS_KEY = 'opos_simulacre_results_v1'
+
+function loadSavedResults() {
+  try {
+    const raw = localStorage.getItem(RESULTS_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function saveResults(data) {
+  try { localStorage.setItem(RESULTS_KEY, JSON.stringify(data)) } catch {}
+}
+
+function clearSavedResults() {
+  try { localStorage.removeItem(RESULTS_KEY) } catch {}
+}
 
 function loadDraft() {
   try {
@@ -26,7 +42,7 @@ export const useSimulacreStore = defineStore('simulacre', () => {
   const generating = ref(false)
   const evaluating = ref(false)
   const error = ref(null)
-  const results = ref(null)      // resultat final un cop avaluat
+  const results = ref(loadSavedResults())  // resultat final un cop avaluat
   const lastResult = ref(null)   // últim resultat desat a BD
   const phase = ref('idle')      // 'idle' | 'exam' | 'evaluating' | 'results'
 
@@ -204,6 +220,7 @@ export const useSimulacreStore = defineStore('simulacre', () => {
     } catch {}
 
     clearDraft()
+    saveResults(results.value)
     phase.value = 'results'
     evaluating.value = false
   }
@@ -263,6 +280,7 @@ export const useSimulacreStore = defineStore('simulacre', () => {
       supositTotal: Math.round(supositTotal * 100) / 100,
       answers: updatedAnswers,
     }
+    saveResults(results.value)
     evaluating.value = false
   }
 
@@ -274,6 +292,7 @@ export const useSimulacreStore = defineStore('simulacre', () => {
     error.value = null
     phase.value = 'idle'
     clearDraft()
+    clearSavedResults()
   }
 
   return {

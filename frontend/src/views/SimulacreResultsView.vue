@@ -19,12 +19,19 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSimulacreStore } from '../stores/simulacre.js'
 import SimulacreResults from '../components/practice/SimulacreResults.vue'
 
 const router = useRouter()
 const simulacre = useSimulacreStore()
+
+onMounted(() => {
+  if (simulacre.results && simulacre.phase !== 'results') {
+    simulacre.phase = 'results'
+  }
+})
 
 function startNew() {
   simulacre.reset()
