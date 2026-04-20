@@ -131,21 +131,22 @@ class GeminiService:
 
     _FALLBACK_MODEL = "llama-3.1-8b-instant"
 
-    async def _call_model(self, model: str, prompt: str):
+    async def _call_model(self, model: str, prompt: str, max_tokens: int = 4096):
         return await self.client.chat.completions.create(
             model=model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
+            max_tokens=max_tokens,
         )
 
-    async def _generate_json(self, prompt: str, model: str | None = None) -> dict | list:
+    async def _generate_json(self, prompt: str, model: str | None = None, max_tokens: int = 4096) -> dict | list:
         primary = model or self.model
         response = None
 
         # ── Try primary model up to 3 times ──────────────────────────────────
         for attempt in range(3):
             try:
-                response = await self._call_model(primary, prompt)
+                response = await self._call_model(primary, prompt, max_tokens=max_tokens)
                 break
             except Exception as e:
                 msg = str(e).upper()
@@ -170,7 +171,7 @@ class GeminiService:
                 if primary != self._FALLBACK_MODEL:
                     logger.warning(f"Model {primary} ha fallat 3 cops. Provant fallback {self._FALLBACK_MODEL}…")
                     try:
-                        response = await self._call_model(self._FALLBACK_MODEL, prompt)
+                        response = await self._call_model(self._FALLBACK_MODEL, prompt, max_tokens=max_tokens)
                         logger.info(f"Fallback {self._FALLBACK_MODEL} OK")
                     except Exception as fe:
                         logger.error(f"Fallback també ha fallat: {fe}")
@@ -388,7 +389,7 @@ class GeminiService:
             "]\n\n"
             f"LLISTA DE 30 TEMES (títol: resum clau):\n{temes_text}"
         )
-        result = await self._generate_json(prompt, model="llama-3.1-8b-instant")
+        result = await self._generate_json(prompt, model="llama-3.1-8b-instant", max_tokens=7000)
         if not isinstance(result, list):
             raise HTTPException(status_code=500, detail="La IA no ha retornat una llista de preguntes.")
         valid = [q for q in result if isinstance(q, dict) and "id" in q and "tipus" in q and "enunciat" in q]
