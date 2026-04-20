@@ -193,27 +193,24 @@ class GeminiService:
         json_start = re.search(r"[\[{]", text)
         if json_start:
             text = text[json_start.start():]
-        # Trim trailing content after the last ] or }
-        last_bracket = max(text.rfind("]"), text.rfind("}"))
-        if last_bracket > 0:
-            text = text[:last_bracket + 1]
+        # Try to parse as-is first
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            # JSON truncated: recover complete objects by finding last "},\n  {" or "}]"
-            recovered = None
-            last_complete = text.rfind("},")
+            pass
+        # JSON may be truncated: recover complete objects by finding last "},\n"
+        for sep in ["},\n", "},\r", "},"]:
+            last_complete = text.rfind(sep)
             if last_complete > 0:
                 candidate = text[:last_complete + 1] + "]"
                 try:
                     recovered = json.loads(candidate)
+                    print(f"[JSON RECOVERED] {len(recovered)} objectes", flush=True)
+                    return recovered
                 except json.JSONDecodeError:
                     pass
-            if recovered is None:
-                print(f"[JSON UNRECOVERABLE] {repr(text[:200])}", flush=True)
-                raise HTTPException(status_code=500, detail="La IA ha retornat una resposta invàlida. Torna a intentar-ho.")
-            print(f"[JSON RECOVERED] {len(recovered)} objectes", flush=True)
-            return recovered
+        print(f"[JSON UNRECOVERABLE] {repr(text[:300])}", flush=True)
+        raise HTTPException(status_code=500, detail="La IA ha retornat una resposta invàlida. Torna a intentar-ho.")
 
     async def generate_flashcards(self, topic_text: str, topic_name: str) -> list[dict]:
         prompt = (
