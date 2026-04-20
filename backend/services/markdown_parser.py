@@ -83,3 +83,22 @@ def invalidate_cache(path: Path | None = None):
         _cache.pop(path.resolve(), None)
     else:
         _cache.clear()
+
+
+def extract_flash_check(content: str) -> str:
+    """Extreu el text del bloc 'Resum de conceptes clau (Flash-Check)' d'un tema.
+    Si no existeix, retorna les primeres 300 chars del contingut."""
+    lines = content.splitlines()
+    in_flash = False
+    result = []
+    for line in lines:
+        if re.match(r"^#{1,6}\s.*[Ff]lash", line):
+            in_flash = True
+            continue
+        if in_flash:
+            if re.match(r"^#{1,6}\s", line):
+                break
+            result.append(line)
+    if result:
+        return " ".join(" ".join(result).split())[:400]
+    return " ".join(content.split())[:300]
