@@ -420,20 +420,15 @@ class GeminiService:
                 for a in batch
             )
             prompt = (
-                "Ets un corrector estricte d'oposicions públiques per a tècnic C1 d'informàtica.\n"
-                "Avalua CADASCUNA de les respostes de l'usuari seguint la rúbrica.\n\n"
-                "CRITERIS D'AVALUACIÓ:\n"
-                "- 0.0: Resposta absent, incorrecta o completament fora de tema.\n"
-                "- 0.5: Resposta parcial. Menciona alguns conceptes clau però li falten elements essencials.\n"
-                "- 1.0: Resposta correcta. Menciona els conceptes clau de la rúbrica amb coherència.\n"
-                "NO atribueixis a l'usuari conceptes que no hagi escrit explícitament.\n"
-                "Si la resposta és buida o d'1-2 paraules genèriques, la puntuació és 0.0.\n\n"
-                "Respon ÚNICAMENT amb JSON vàlid, sense text addicional:\n"
-                "[{\"id\":1,\"factor\":0.5,\"encerts\":[\"concepte mencionat\"],"
-                "\"mancances\":[\"concepte que faltava\"],\"comentari\":\"...\"}]\n\n"
+                "Corrector estricte oposicions C1 informàtica. Avalua cada resposta.\n"
+                "factor: 0.0=absent/incorrecta, 0.5=parcial, 1.0=correcta.\n"
+                "NO atribueixis conceptes no escrits explícitament per l'usuari.\n"
+                "IMPORTANT: comentari màx 10 paraules. encerts/mancances màx 2 items cadascun.\n"
+                "Respon ÚNICAMENT JSON sense text extra:\n"
+                "[{\"id\":1,\"factor\":0.5,\"encerts\":[\"X\"],\"mancances\":[\"Y\"],\"comentari\":\"Breu.\"}]\n\n"
                 f"RESPOSTES A AVALUAR:\n{items_text}"
             )
-            result = await self._generate_json(prompt, max_tokens=1500)
+            result = await self._generate_json(prompt, max_tokens=2000)
             if not isinstance(result, list):
                 return [{"id": a["id"], "factor": 0.0, "encerts": [], "mancances": [], "comentari": "Error d'avaluació"} for a in batch]
             return result
