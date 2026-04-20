@@ -1,4 +1,5 @@
 import os
+import logging
 import random
 from datetime import datetime
 from pathlib import Path
@@ -7,6 +8,8 @@ from pydantic import BaseModel
 from database import get_db
 from services.gemini import get_gemini
 from services.markdown_parser import get_topics, extract_flash_check
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["simulacre"])
 
@@ -43,13 +46,21 @@ class SaveBody(BaseModel):
 
 @router.post("/api/simulacre/generate")
 async def generate_simulacre():
-    temes = _get_importants_temes()
-    seed = datetime.now().strftime("%Y%m%d%H%M%S") + str(random.randint(100, 999))
-    questions = await get_gemini().generate_simulacre(temes, seed)
-    random.shuffle(questions)
-    for i, q in enumerate(questions):
-        q["id"] = i + 1
-    return {"questions": questions, "total": len(questions)}
+    try:
+        temes = _get_importants_temes()
+        logger.info(f"Generant simulacre amb {len(temes)} temes importants")
+        seed = datetime.now().strftime("%Y%m%d%H%M%S") + str(random.randint(100, 999))
+        questions = await get_gemini().generate_simulacre(temes, seed)
+        random.shuffle(questions)
+        for i, q in enumerate(questions):
+            q["id"] = i + 1
+        logger.info(f"Simulacre generat: {len(questions)} preguntes")
+        return {"questions": questions, "total": len(questions)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error inesperat generant simulacre: {type(e).__name__}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error intern: {type(e).__name__}: {e}")
 
 
 @router.post("/api/simulacre/evaluate")
