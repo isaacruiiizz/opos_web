@@ -47,19 +47,23 @@ class SaveBody(BaseModel):
 @router.post("/api/simulacre/generate")
 async def generate_simulacre():
     try:
+        print("[SIMULACRE] Iniciant generate_simulacre...", flush=True)
         temes = _get_importants_temes()
-        logger.info(f"Generant simulacre amb {len(temes)} temes importants")
+        print(f"[SIMULACRE] {len(temes)} temes importants trobats", flush=True)
         seed = datetime.now().strftime("%Y%m%d%H%M%S") + str(random.randint(100, 999))
         questions = await get_gemini().generate_simulacre(temes, seed)
         random.shuffle(questions)
         for i, q in enumerate(questions):
             q["id"] = i + 1
-        logger.info(f"Simulacre generat: {len(questions)} preguntes")
+        print(f"[SIMULACRE] OK: {len(questions)} preguntes", flush=True)
         return {"questions": questions, "total": len(questions)}
-    except HTTPException:
+    except HTTPException as e:
+        print(f"[SIMULACRE] HTTPException {e.status_code}: {e.detail}", flush=True)
         raise
     except Exception as e:
-        logger.error(f"Error inesperat generant simulacre: {type(e).__name__}: {e}", exc_info=True)
+        import traceback
+        print(f"[SIMULACRE] ERROR: {type(e).__name__}: {e}", flush=True)
+        print(traceback.format_exc(), flush=True)
         raise HTTPException(status_code=500, detail=f"Error intern: {type(e).__name__}: {e}")
 
 
