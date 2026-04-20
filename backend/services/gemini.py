@@ -345,6 +345,100 @@ class GeminiService:
         )
         return await self._generate_json(prompt)
 
+    async def generate_simulacre(self, temes: list[dict], seed: str) -> list[dict]:
+        """Genera 40 preguntes mixtes dels 30 temes importants.
+        Dissenyat per mantenir-se dins del límit de 6K TPM de Groq."""
+        temes_text = "\n".join(
+            f"{i+1}. {t['titol']}: {t['resum']}"
+            for i, t in enumerate(temes)
+        )
+        prompt = (
+            "Ets un tribunal d'oposicions públiques per a tècnic C1 d'informàtica en un ajuntament català.\n"
+            "La teva tasca és generar EXACTAMENT 40 preguntes d'examen barrejant tres tipus.\n\n"
+            "REGLES OBLIGATÒRIES:\n"
+            "1. Les preguntes han de cobrir la majoria dels 30 temes (no repeteixis el mateix tema més de 2 vegades).\n"
+            "2. INVENTA preguntes que vagin MÉS ENLLÀ dels apunts: aplica els conceptes a situacions reals "
+            "d'un ajuntament petit com Maçanet de la Selva. No reprodueixis literalment els apunts.\n"
+            "3. Les respostes alternatives han de tenir 3 distractors plausibles (no obviament incorrectes).\n"
+            "4. Les preguntes breus requereixen 2-4 frases per respondre correctament.\n"
+            "5. Els supòsits pràctics plantegen un cas real concret (incidència TIC, tràmit, decisió tècnica).\n"
+            "6. Distribueix: 15-22 tipo test (test), 12-18 respostes breus (breu), 2-5 supòsits (suposit). Total = 40.\n"
+            "7. Penalització tipo test: -1/3 punts per resposta incorrecta (indica-ho al camp 'penalitza': true).\n"
+            f"8. Usa seed '{seed}' per garantir variació respecte de tests anteriors.\n"
+            "9. Respon ÚNICAMENT amb JSON vàlid, sense text addicional, sense markdown.\n\n"
+            "FORMAT DE RESPOSTA (array de exactament 40 objectes):\n"
+            "[\n"
+            "  {\"id\":1,\"tema_num\":3,\"tema_titol\":\"Interoperabilitat\","
+            "\"tipus\":\"test\",\"dificultat\":\"mitjana\",\"punts\":0.25,"
+            "\"enunciat\":\"...\","
+            "\"opcions\":{\"A\":\"...\",\"B\":\"...\",\"C\":\"...\",\"D\":\"...\"},"
+            "\"correcta\":\"B\",\"explicacio\":\"...\",\"penalitza\":true},\n"
+            "  {\"id\":2,\"tema_num\":7,\"tema_titol\":\"Obligats i notificació\","
+            "\"tipus\":\"breu\",\"dificultat\":\"alta\",\"punts\":0.5,"
+            "\"enunciat\":\"...\","
+            "\"opcions\":null,\"correcta\":null,"
+            "\"resposta_model\":\"...\",\"rubrica\":\"Mencionar: X, Y, Z\","
+            "\"explicacio\":\"...\",\"penalitza\":false},\n"
+            "  {\"id\":3,\"tema_num\":22,\"tema_titol\":\"Cas Pràctic - Diagnòstic d'Errors\","
+            "\"tipus\":\"suposit\",\"dificultat\":\"alta\",\"punts\":1.0,"
+            "\"enunciat\":\"L'alcaldessa et truca: cap ordinador de l'ajuntament pot imprimir...\","
+            "\"opcions\":null,\"correcta\":null,"
+            "\"resposta_model\":\"...\",\"rubrica\":\"Valorar: diagnòstic sistemàtic, eines, comunicació\","
+            "\"explicacio\":\"...\",\"penalitza\":false}\n"
+            "]\n\n"
+            f"LLISTA DE 30 TEMES (títol: resum clau):\n{temes_text}"
+        )
+        result = await self._generate_json(prompt)
+        if not isinstance(result, list):
+            raise HTTPException(status_code=500, detail="La IA no ha retornat una llista de preguntes.")
+        valid = [q for q in result if isinstance(q, dict) and "id" in q and "tipus" in q and "enunciat" in q]
+        if len(valid) < 20:
+            raise HTTPException(status_code=500, detail=f"La IA ha retornat massa poques preguntes vàlides ({len(valid)}/40).")
+        return valid
+
+    async def evaluate_simulacre_answers(self, answers: list[dict]) -> list[dict]:
+        """Avalua respostes obertes (breu i suposit).
+        Si hi ha >10 respostes, fa 2 crides seqüencials amb 15s de delay per respectar 6K TPM."""
+        if not answers:
+            return []
+
+        async def _evaluate_batch(batch: list[dict]) -> list[dict]:
+            items_text = "\n\n".join(
+                f"PREGUNTA {a['id']}: {a['enunciat']}\n"
+                f"RÚBRICA: {a['rubrica']}\n"
+                f"RESPOSTA MODEL: {a['resposta_model']}\n"
+                f"RESPOSTA USUARI: {a['resposta_usuari']}"
+                for a in batch
+            )
+            prompt = (
+                "Ets un corrector estricte d'oposicions públiques per a tècnic C1 d'informàtica.\n"
+                "Avalua CADASCUNA de les respostes de l'usuari seguint la rúbrica.\n\n"
+                "CRITERIS D'AVALUACIÓ:\n"
+                "- 0.0: Resposta absent, incorrecta o completament fora de tema.\n"
+                "- 0.5: Resposta parcial. Menciona alguns conceptes clau però li falten elements essencials.\n"
+                "- 1.0: Resposta correcta. Menciona els conceptes clau de la rúbrica amb coherència.\n"
+                "NO atribueixis a l'usuari conceptes que no hagi escrit explícitament.\n"
+                "Si la resposta és buida o d'1-2 paraules genèriques, la puntuació és 0.0.\n\n"
+                "Respon ÚNICAMENT amb JSON vàlid, sense text addicional:\n"
+                "[{\"id\":1,\"factor\":0.5,\"encerts\":[\"concepte mencionat\"],"
+                "\"mancances\":[\"concepte que faltava\"],\"comentari\":\"...\"}]\n\n"
+                f"RESPOSTES A AVALUAR:\n{items_text}"
+            )
+            result = await self._generate_json(prompt)
+            if not isinstance(result, list):
+                return [{"id": a["id"], "factor": 0.0, "encerts": [], "mancances": [], "comentari": "Error d'avaluació"} for a in batch]
+            return result
+
+        if len(answers) <= 10:
+            return await _evaluate_batch(answers)
+
+        lot1 = answers[:10]
+        lot2 = answers[10:]
+        results1 = await _evaluate_batch(lot1)
+        await asyncio.sleep(15)
+        results2 = await _evaluate_batch(lot2)
+        return results1 + results2
+
     async def evaluate_answer(self, pregunta: str, resposta_usuari: str,
                                resposta_model: str) -> dict:
         prompt = (
