@@ -36,3 +36,7 @@ export const generateTopicSummary = async (topicId, topicContent) =>
 export const clearEnrichments = async () => api.delete('/ai/enrichments')
 export const clearFlashcards = async () => api.delete('/flashcards')
 export const clearDrawings = async () => api.delete('/drawings')
+export const generateSimulacre = async () => (await api.post('/simulacre/generate')).data
+export const evaluateSimulacre = async (answers) => (await api.post('/simulacre/evaluate', { answers })).data
+export const saveSimulacre = async (payload) => (await api.post('/simulacre/save', payload)).data
+export const fetchLastSimulacre = async () => (await api.get('/simulacre/last')).data
