@@ -11,6 +11,7 @@ from routers import topics, annotations, drawings, flashcards, practice, progres
 from routers import config as config_router
 from routers import ai as ai_router
 from routers import enrichment as enrichment_router
+from routers import simulacre as simulacre_router
 from services.gemini import set_current_model
 
 
@@ -54,3 +55,4 @@ app.include_router(pdf.router)
 app.include_router(config_router.router)
 app.include_router(ai_router.router)
 app.include_router(enrichment_router.router)
+app.include_router(simulacre_router.router)
