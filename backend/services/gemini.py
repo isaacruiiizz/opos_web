@@ -193,6 +193,8 @@ class GeminiService:
         json_start = re.search(r"[\[{]", text)
         if json_start:
             text = text[json_start.start():]
+        # Merge multiple arrays the model may have returned separately: ]\n\n[ → ,
+        text = re.sub(r'\]\s*\[', ',', text)
         # Try to parse as-is first
         try:
             return json.loads(text)
