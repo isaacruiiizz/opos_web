@@ -80,6 +80,19 @@ _CREATE_TABLES = [
         chips_json  TEXT NOT NULL,
         created_at  TEXT DEFAULT (datetime('now'))
     )""",
+    """CREATE TABLE IF NOT EXISTS simulacre_results (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT DEFAULT (datetime('now')),
+        score REAL NOT NULL,
+        passed INTEGER NOT NULL,
+        time_taken_seconds INTEGER NOT NULL,
+        q_test_correct INTEGER DEFAULT 0,
+        q_test_total INTEGER DEFAULT 0,
+        q_breus_score REAL DEFAULT 0,
+        q_breus_total REAL DEFAULT 0,
+        q_suposit_score REAL DEFAULT 0,
+        q_suposit_total REAL DEFAULT 0
+    )""",
 ]
 
 
