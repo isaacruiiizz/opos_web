@@ -38,6 +38,80 @@ def extract_concepts(enunciat: str, max_words: int = 3) -> list[str]:
                 break
     return result
 
+
+async def _get_or_init_state(db, all_topic_nums: list[int]) -> dict:
+    """Carrega l'estat de ronda. Si no existeix o pending buit, inicialitza nova ronda."""
+    cursor = await db.execute(
+        "SELECT current_round, pending_topics FROM simulacre_state WHERE id=1"
+    )
+    row = await cursor.fetchone()
+
+    if not row:
+        pending = all_topic_nums[:]
+        await db.execute(
+            "INSERT INTO simulacre_state (id, current_round, pending_topics) VALUES (1, 1, ?)",
+            (json.dumps(pending),)
+        )
+        await db.commit()
+        return {"current_round": 1, "pending_topics": pending}
+
+    pending = json.loads(row["pending_topics"])
+    current_round = row["current_round"]
+
+    if not pending:
+        new_round = current_round + 1
+        pending = all_topic_nums[:]
+        await db.execute(
+            "UPDATE simulacre_state SET current_round=?, pending_topics=? WHERE id=1",
+            (new_round, json.dumps(pending))
+        )
+        await db.execute(
+            "UPDATE simulacre_topic_concepts SET concepts_used='[]', round_number=?",
+            (new_round,)
+        )
+        await db.commit()
+        return {"current_round": new_round, "pending_topics": pending}
+
+    return {"current_round": current_round, "pending_topics": pending}
+
+
+async def _commit_concepts(db, questions: list[dict], round_number: int) -> None:
+    """Extreu conceptes de les preguntes generades i els desa a DB (màx 10 per tema, FIFO)."""
+    by_topic: dict[int, dict] = {}
+    for q in questions:
+        tnum = q.get("tema_num")
+        ttitol = q.get("tema_titol", "")
+        if tnum is None:
+            continue
+        if tnum not in by_topic:
+            by_topic[tnum] = {"titol": ttitol, "concepts": []}
+        by_topic[tnum]["concepts"].extend(extract_concepts(q.get("enunciat", "")))
+
+    for tnum, data in by_topic.items():
+        new_concepts = list(dict.fromkeys(data["concepts"]))  # dedup preserving order
+
+        cursor = await db.execute(
+            "SELECT concepts_used FROM simulacre_topic_concepts WHERE topic_num=?", (tnum,)
+        )
+        row = await cursor.fetchone()
+        existing = json.loads(row["concepts_used"]) if row else []
+
+        merged = existing + [c for c in new_concepts if c not in existing]
+        if len(merged) > 10:
+            merged = merged[-10:]  # FIFO: drop oldest
+
+        if row:
+            await db.execute(
+                "UPDATE simulacre_topic_concepts SET concepts_used=?, round_number=?, topic_titol=? WHERE topic_num=?",
+                (json.dumps(merged), round_number, data["titol"], tnum)
+            )
+        else:
+            await db.execute(
+                "INSERT INTO simulacre_topic_concepts (topic_num, topic_titol, round_number, concepts_used) VALUES (?,?,?,?)",
+                (tnum, data["titol"], round_number, json.dumps(merged))
+            )
+    await db.commit()
+
 router = APIRouter(tags=["simulacre"])
 
 _default_notes = str(Path(__file__).parent.parent.parent / "data" / "ApuntsTemari.md")
