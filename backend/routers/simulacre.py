@@ -133,6 +133,7 @@ class SaveBody(BaseModel):
     q_breus_total: float
     q_suposit_score: float
     q_suposit_total: float
+    topics_used: list[int] = []
 
 
 @router.post("/api/simulacre/generate")
@@ -217,7 +218,59 @@ async def save_simulacre(body: SaveBody, db=Depends(get_db)):
          body.q_breus_score, body.q_breus_total,
          body.q_suposit_score, body.q_suposit_total)
     )
+
+    # Avançar rotació de temes
+    if body.topics_used:
+        cursor = await db.execute(
+            "SELECT current_round, pending_topics FROM simulacre_state WHERE id=1"
+        )
+        row = await cursor.fetchone()
+        if row:
+            pending = json.loads(row["pending_topics"])
+            used_set = set(body.topics_used)
+            pending = [t for t in pending if t not in used_set]
+
+            if not pending:
+                # Ronda completa: iniciar nova
+                all_temes = _get_importants_temes()
+                all_topic_nums = [i + 1 for i in range(len(all_temes))]
+                new_round = row["current_round"] + 1
+                await db.execute(
+                    "UPDATE simulacre_state SET current_round=?, pending_topics=? WHERE id=1",
+                    (new_round, json.dumps(all_topic_nums))
+                )
+                await db.execute(
+                    "UPDATE simulacre_topic_concepts SET concepts_used='[]', round_number=?",
+                    (new_round,)
+                )
+                print(f"[SIMULACRE] Ronda {row['current_round']} completada! Iniciant ronda {new_round}", flush=True)
+            else:
+                await db.execute(
+                    "UPDATE simulacre_state SET pending_topics=? WHERE id=1",
+                    (json.dumps(pending),)
+                )
+
     return {"ok": True}
+
+
+@router.get("/api/simulacre/round-state")
+async def get_round_state(db=Depends(get_db)):
+    all_temes = _get_importants_temes()
+    total = len(all_temes)
+    cursor = await db.execute(
+        "SELECT current_round, pending_topics FROM simulacre_state WHERE id=1"
+    )
+    row = await cursor.fetchone()
+    if not row:
+        return {"round": 1, "pending": total, "total": total, "covered": 0}
+    pending = json.loads(row["pending_topics"])
+    covered = total - len(pending)
+    return {
+        "round": row["current_round"],
+        "pending": len(pending),
+        "total": total,
+        "covered": covered,
+    }
 
 
 @router.get("/api/simulacre/last")
