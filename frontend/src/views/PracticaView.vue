@@ -6,6 +6,7 @@
       :generating="simulacre.generating"
       :has-draft="hasDraft"
       :error="simulacre.error"
+      :round-state="simulacre.roundState"
       @start="startSimulacre"
     />
 
@@ -51,7 +52,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTopicsStore } from '../stores/topics.js'
 import { usePracticeStore } from '../stores/practice.js'
@@ -100,6 +101,9 @@ const modeErrors = computed(() => {
 })
 
 simulacre.loadLastResult()
+onMounted(() => {
+  simulacre.loadRoundState()
+})
 
 async function startSimulacre() {
   await simulacre.startGeneration()

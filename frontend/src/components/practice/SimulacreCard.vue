@@ -6,8 +6,11 @@
           <span class="text-lg">🎯</span>
           <h2 class="font-bold text-amber-900 dark:text-amber-300 text-sm">Simulacre d'Examen Oficial</h2>
         </div>
-        <p class="text-xs text-amber-700 dark:text-amber-400">~20 preguntes · 2 hores · Nota /10 · Mínim 5 per aprovar</p>
-        <p class="text-xs text-amber-600 dark:text-amber-500 mt-0.5">Temes "a tenir en compte" (30 temes)</p>
+        <p class="text-xs text-amber-700 dark:text-amber-400">15 preguntes · 2 hores · Nota /10 · Mínim 5 per aprovar</p>
+        <p v-if="roundState" class="text-xs text-amber-600 dark:text-amber-500 mt-0.5">
+          Ronda {{ roundState.round }} · {{ roundState.covered }}/{{ roundState.total }} temes coberts
+        </p>
+        <p v-else class="text-xs text-amber-600 dark:text-amber-500 mt-0.5">Temes "a tenir en compte"</p>
       </div>
 
       <div v-if="lastResult" class="text-right shrink-0">
@@ -54,6 +57,7 @@ defineProps({
   generating: { type: Boolean, default: false },
   hasDraft: { type: Boolean, default: false },
   error: { type: String, default: null },
+  roundState: { type: Object, default: null },
 })
 defineEmits(['start'])
 </script>
