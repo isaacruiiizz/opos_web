@@ -26,7 +26,7 @@ _STOPWORDS_CA = {
 
 def extract_concepts(enunciat: str, max_words: int = 3) -> list[str]:
     """Extreu fins a max_words paraules significatives d'un enunciat."""
-    words = re.findall(r'\b[a-zA-ZàáèéíïóòúüçÀÁÈÉÍÏÓÒÚÜÇ]{4,}\b', enunciat)
+    words = re.findall(r'[a-zA-ZàáèéíïóòúüçÀÁÈÉÍÏÓÒÚÜÇ·]{4,}', enunciat)
     seen: set[str] = set()
     result: list[str] = []
     for w in words:
@@ -34,8 +34,8 @@ def extract_concepts(enunciat: str, max_words: int = 3) -> list[str]:
         if wl not in _STOPWORDS_CA and wl not in seen:
             seen.add(wl)
             result.append(wl)
-        if len(result) >= max_words:
-            break
+            if len(result) >= max_words:
+                break
     return result
 
 router = APIRouter(tags=["simulacre"])

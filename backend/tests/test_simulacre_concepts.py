@@ -26,3 +26,7 @@ def test_extract_max_3():
 def test_extract_no_duplicates():
     result = extract_concepts("servidor servidor servidor proxy")
     assert result.count("servidor") == 1
+
+def test_extract_punt_volat():
+    result = extract_concepts("sol·licitud col·laboració xarxa")
+    assert "sol·licitud" in result
