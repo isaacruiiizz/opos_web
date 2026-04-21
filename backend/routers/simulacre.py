@@ -1,6 +1,8 @@
 import os
 import logging
 import random
+import re
+import json
 from datetime import datetime
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
@@ -10,6 +12,31 @@ from services.gemini import get_gemini
 from services.markdown_parser import get_topics, extract_flash_check
 
 logger = logging.getLogger(__name__)
+
+_STOPWORDS_CA = {
+    "el","la","els","les","de","d","i","a","en","per","amb","que","un","una",
+    "uns","unes","es","al","del","dels","és","ha","han","ser","hi","ho",
+    "també","però","quan","com","si","no","més","tot","tots","totes","s",
+    "aquest","aquesta","aquests","aquestes","seu","seva","seus","seves",
+    "cal","pot","van","fer","tenir","estar","voler","poder","haver","anar",
+    "e","o","u","ni","sinó","mentre","fins","des","sense","sobre","sota",
+    "entre","durant","cada","altre","altres","mateix","mateixa","molt",
+    "poc","ara","aquí","allà","qui","on","perquè","respecte","tret",
+}
+
+def extract_concepts(enunciat: str, max_words: int = 3) -> list[str]:
+    """Extreu fins a max_words paraules significatives d'un enunciat."""
+    words = re.findall(r'\b[a-zA-ZàáèéíïóòúüçÀÁÈÉÍÏÓÒÚÜÇ]{4,}\b', enunciat)
+    seen: set[str] = set()
+    result: list[str] = []
+    for w in words:
+        wl = w.lower()
+        if wl not in _STOPWORDS_CA and wl not in seen:
+            seen.add(wl)
+            result.append(wl)
+        if len(result) >= max_words:
+            break
+    return result
 
 router = APIRouter(tags=["simulacre"])
 
