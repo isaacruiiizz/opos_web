@@ -136,18 +136,57 @@ class SaveBody(BaseModel):
 
 
 @router.post("/api/simulacre/generate")
-async def generate_simulacre():
+async def generate_simulacre(db=Depends(get_db)):
     try:
         print("[SIMULACRE] Iniciant generate_simulacre...", flush=True)
-        temes = _get_importants_temes()
-        print(f"[SIMULACRE] {len(temes)} temes importants trobats", flush=True)
+        all_temes = _get_importants_temes()
+        all_topic_nums = [i + 1 for i in range(len(all_temes))]
+
+        state = await _get_or_init_state(db, all_topic_nums)
+        current_round = state["current_round"]
+        pending = state["pending_topics"]
+
+        # If pending is empty (round just completed via save), treat all as pending
+        if not pending:
+            pending = all_topic_nums[:]
+
+        # Seleccionar fins a 10 temes del pendent
+        n = min(10, len(pending))
+        selected_nums = pending[:n]
+        selected_temes = [all_temes[num - 1] for num in selected_nums if 1 <= num <= len(all_temes)]
+
+        # Carregar blacklist de conceptes per als temes seleccionats
+        if selected_nums:
+            cursor = await db.execute(
+                f"SELECT topic_num, concepts_used FROM simulacre_topic_concepts WHERE topic_num IN ({','.join('?' * len(selected_nums))})",
+                selected_nums
+            )
+            rows = await cursor.fetchall()
+        else:
+            rows = []
+        concepts_blacklist: dict[int, list[str]] = {
+            row["topic_num"]: json.loads(row["concepts_used"]) for row in rows
+        }
+
         seed = datetime.now().strftime("%Y%m%d%H%M%S") + str(random.randint(100, 999))
-        questions = await get_gemini().generate_simulacre(temes, seed)
+        questions = await get_gemini().generate_simulacre(
+            selected_temes, seed, selected_nums, concepts_blacklist
+        )
+
+        # Commit immediat de conceptes
+        await _commit_concepts(db, questions, current_round)
+
         random.shuffle(questions)
         for i, q in enumerate(questions):
             q["id"] = i + 1
-        print(f"[SIMULACRE] OK: {len(questions)} preguntes", flush=True)
-        return {"questions": questions, "total": len(questions)}
+
+        print(f"[SIMULACRE] OK: {len(questions)} preguntes, ronda {current_round}, temes {selected_nums}", flush=True)
+        return {
+            "questions": questions,
+            "total": len(questions),
+            "topics_used": selected_nums,
+            "round": current_round,
+        }
     except HTTPException as e:
         print(f"[SIMULACRE] HTTPException {e.status_code}: {e.detail}", flush=True)
         raise
