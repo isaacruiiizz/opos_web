@@ -71,6 +71,7 @@ export const useSimulacreStore = defineStore('simulacre', () => {
       questions.value = draft.questions
       answers.value = draft.answers || {}
       timeRemaining.value = draft.timeRemaining
+      topicsUsed.value = draft.topicsUsed || []
       phase.value = 'exam'
       return
     }
@@ -117,6 +118,7 @@ export const useSimulacreStore = defineStore('simulacre', () => {
       questions: questions.value,
       answers: answers.value,
       timeRemaining: timeRemaining.value,
+      topicsUsed: topicsUsed.value,
     })
   }
 
