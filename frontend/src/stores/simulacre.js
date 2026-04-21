@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { generateSimulacre, evaluateSimulacre, saveSimulacre, fetchLastSimulacre } from '../api/client.js'
+import { generateSimulacre, evaluateSimulacre, saveSimulacre, fetchLastSimulacre, fetchRoundState } from '../api/client.js'
 
 const STORAGE_KEY = 'opos_simulacre_v1'
 const RESULTS_KEY = 'opos_simulacre_results_v1'
@@ -45,6 +45,8 @@ export const useSimulacreStore = defineStore('simulacre', () => {
   const results = ref(loadSavedResults())  // resultat final un cop avaluat
   const lastResult = ref(null)   // últim resultat desat a BD
   const phase = ref('idle')      // 'idle' | 'exam' | 'evaluating' | 'results'
+  const topicsUsed = ref([])       // temes usats a la generació actual
+  const roundState = ref(null)     // { round, pending, total, covered }
 
   const totalQuestions = computed(() => questions.value.length)
   const answeredCount = computed(() => Object.keys(answers.value).length)
@@ -54,6 +56,12 @@ export const useSimulacreStore = defineStore('simulacre', () => {
   async function loadLastResult() {
     try {
       lastResult.value = await fetchLastSimulacre()
+    } catch {}
+  }
+
+  async function loadRoundState() {
+    try {
+      roundState.value = await fetchRoundState()
     } catch {}
   }
 
@@ -72,6 +80,7 @@ export const useSimulacreStore = defineStore('simulacre', () => {
     try {
       const data = await generateSimulacre()
       questions.value = data.questions
+      topicsUsed.value = data.topics_used || []
       answers.value = {}
       timeRemaining.value = 7200
       phase.value = 'exam'
@@ -215,6 +224,7 @@ export const useSimulacreStore = defineStore('simulacre', () => {
         q_breus_total: breusTotal,
         q_suposit_score: supositScore,
         q_suposit_total: supositTotal,
+        topics_used: topicsUsed.value,
       })
       lastResult.value = { score, passed, date: new Date().toISOString() }
     } catch {}
@@ -299,7 +309,8 @@ export const useSimulacreStore = defineStore('simulacre', () => {
     questions, answers, timeRemaining, generating, evaluating, error,
     results, lastResult, phase,
     totalQuestions, answeredCount, testQuestions, openQuestions,
-    loadLastResult, startGeneration, answerTest, answerOpen,
+    loadLastResult, loadRoundState, startGeneration, answerTest, answerOpen,
     tickTimer, submitExam, reEvaluate, reset, persistDraft,
+    topicsUsed, roundState,
   }
 })

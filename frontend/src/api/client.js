@@ -40,3 +40,4 @@ export const generateSimulacre = async () => (await api.post('/simulacre/generat
 export const evaluateSimulacre = async (answers) => (await api.post('/simulacre/evaluate', { answers })).data
 export const saveSimulacre = async (payload) => (await api.post('/simulacre/save', payload)).data
 export const fetchLastSimulacre = async () => (await api.get('/simulacre/last')).data
+export const fetchRoundState = async () => (await api.get('/simulacre/round-state')).data
