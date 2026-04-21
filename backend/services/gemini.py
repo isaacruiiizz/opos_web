@@ -445,45 +445,48 @@ class GeminiService:
         return valid
 
     async def evaluate_simulacre_answers(self, answers: list[dict]) -> list[dict]:
-        """Avalua respostes obertes (breu i suposit).
-        Si hi ha >10 respostes, fa 2 crides seqüencials amb 15s de delay per respectar 6K TPM."""
+        """Avalua respostes obertes (breu i suposit) en una sola crida (Llama 4 Scout, 30K TPM)."""
         if not answers:
             return []
 
-        async def _evaluate_batch(batch: list[dict]) -> list[dict]:
-            items_text = "\n\n".join(
-                f"PREGUNTA {a['id']}: {a['enunciat']}\n"
-                f"RÚBRICA: {a['rubrica']}\n"
-                f"RESPOSTA MODEL: {a['resposta_model']}\n"
-                f"RESPOSTA USUARI: {a['resposta_usuari']}"
-                for a in batch
-            )
-            prompt = (
-                "Corrector estricte oposicions C1 informàtica. Avalua cada resposta.\n"
-                "factor: 0.0=absent/incorrecta, 0.5=parcial (menciona alguns conceptes però falta coherència), 1.0=correcta (menciona els conceptes clau amb coherència).\n"
-                "REGLES IMPORTANTS:\n"
-                "- Llegeix la resposta de l'usuari sencera i valora el que ha escrit.\n"
-                "- Si l'usuari menciona conceptes correctes, reconeix-los als encerts.\n"
-                "- NO atribueixis conceptes no escrits explícitament per l'usuari.\n"
-                "- comentari: 1-2 frases concretes explicant per qué aquell factor. Màx 30 paraules.\n"
-                "- encerts/mancances: màx 3 items cadascun, breus.\n"
-                "Respon ÚNICAMENT JSON sense text extra:\n"
-                "[{\"id\":1,\"factor\":0.5,\"encerts\":[\"X\"],\"mancances\":[\"Y\"],\"comentari\":\"Explica el perquè del factor.\"}]\n\n"
-                f"RESPOSTES A AVALUAR:\n{items_text}"
-            )
-            result = await self._generate_json(prompt, max_tokens=2000)
-            if not isinstance(result, list):
-                return [{"id": a["id"], "factor": 0.0, "encerts": [], "mancances": [], "comentari": "Error d'avaluació"} for a in batch]
-            return result
+        items_text = "\n\n".join(
+            f"PREGUNTA {a['id']}: {a['enunciat']}\n"
+            f"RÚBRICA: {a['rubrica']}\n"
+            f"RESPOSTA MODEL: {a['resposta_model']}\n"
+            f"RESPOSTA USUARI: {a['resposta_usuari'][:1500]}"
+            for a in answers
+        )
 
-        BATCH = 5
-        all_results = []
-        for i in range(0, len(answers), BATCH):
-            if i > 0:
-                await asyncio.sleep(12)
-            batch_result = await _evaluate_batch(answers[i:i + BATCH])
-            all_results.extend(batch_result)
-        return all_results
+        prompt = (
+            "Ets un corrector estricte d'oposicions C1 informàtica. Avalua les respostes.\n\n"
+            "ESCALA DE FACTORS:\n"
+            "- 0.0: absent, en blanc, o completament incorrecte\n"
+            "- 0.25: alguns conceptes però amb errors importants o molt incomplet\n"
+            "- 0.5: parcial, menciona conceptes clau però falta coherència o algun punt\n"
+            "- 0.75: bona resposta amb algun punt menor que falta\n"
+            "- 1.0: correcta i completa, menciona tots els conceptes de la rúbrica\n\n"
+            "REGLES:\n"
+            "- Llegeix la resposta sencera. Valora el que ha escrit, no el que no ha escrit.\n"
+            "- Si l'usuari menciona conceptes correctes amb paraules pròpies, reconeix-los.\n"
+            "- NO atribueixis coneixements no escrits explícitament per l'usuari.\n"
+            "- comentari: 1-2 frases explicant el factor. Màx 30 paraules.\n"
+            "- encerts/mancances: màx 3 items cadascun.\n\n"
+            f"RESPOSTES A AVALUAR:\n{items_text}\n\n"
+            "Respon ÚNICAMENT JSON array (sense text extra):\n"
+            '[{"id":1,"factor":0.75,"encerts":["X","Y"],"mancances":["Z"],"comentari":"..."}]'
+        )
+
+        result = await self._generate_json(
+            prompt,
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            max_tokens=1500,
+        )
+        if not isinstance(result, list):
+            return [
+                {"id": a["id"], "factor": 0.0, "encerts": [], "mancances": [], "comentari": "Error d'avaluació"}
+                for a in answers
+            ]
+        return result
 
     async def evaluate_answer(self, pregunta: str, resposta_usuari: str,
                                resposta_model: str) -> dict:
