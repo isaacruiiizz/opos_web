@@ -57,10 +57,17 @@ class UsageTracker:
 # Module-level model state
 # ---------------------------------------------------------------------------
 
-_model: str = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+_model: str = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
 _usage = UsageTracker()
 
 GROQ_MODELS = [
+    {
+        "id": "meta-llama/llama-4-scout-17b-16e-instruct",
+        "display_name": "Llama 4 Scout 17B",
+        "description": "Millor qualitat, 30K TPM - Recomanat per simulacre",
+        "rpm": 30, "tpm": 30_000, "rpd": 14_400,
+        "input_token_limit": 131_072, "output_token_limit": 8_192,
+    },
     {
         "id": "llama-3.3-70b-versatile",
         "display_name": "Llama 3.3 70B",
@@ -367,44 +374,74 @@ class GeminiService:
         )
         return await self._generate_json(prompt)
 
-    async def generate_simulacre(self, temes: list[dict], seed: str) -> list[dict]:
-        """Genera 40 preguntes mixtes dels 30 temes importants.
-        Dissenyat per mantenir-se dins del límit de 6K TPM de Groq."""
+    async def generate_simulacre(
+        self,
+        temes: list[dict],
+        seed: str,
+        selected_topic_nums: list[int],
+        concepts_blacklist: dict[int, list[str]],
+    ) -> list[dict]:
+        """Genera 15 preguntes (10 test + 3 breus + 2 suposits) dels temes seleccionats."""
         temes_text = "\n".join(
-            f"{i+1}. {t['titol']}: {t['resum']}"
+            f"{i+1}. {t['titol']}: {t['resum'][:120]}"
             for i, t in enumerate(temes)
         )
-        prompt = (
-            "Tribunal oposicions C1 informàtica ajuntament català. Genera array JSON de 20 preguntes.\n"
-            f"Seed variació: {seed}\n"
-            "REGLES:\n"
-            "- Cobreix la majoria de temes, màx 2 preguntes per tema.\n"
-            "- Aplica conceptes a situacions reals d'ajuntament petit (Maçanet de la Selva).\n"
-            "- Distribució: 10 test + 7 breu + 3 suposit = 20 total.\n"
-            "- test: 4 opcions A/B/C/D, penalitza:-1/3, punts:0.25.\n"
-            "- breu: resposta 2-4 frases, punts:0.5.\n"
-            "- suposit: cas real TIC, punts:1.0.\n"
-            "Respon ÚNICAMENT JSON vàlid:\n"
-            "[{\"id\":1,\"tema_num\":3,\"tema_titol\":\"...\",\"tipus\":\"test\","
-            "\"punts\":0.25,\"enunciat\":\"...\","
-            "\"opcions\":{\"A\":\"...\",\"B\":\"...\",\"C\":\"...\",\"D\":\"..\"},"
-            "\"correcta\":\"B\",\"explicacio\":\"...\",\"penalitza\":true},"
-            "{\"id\":2,\"tema_num\":7,\"tema_titol\":\"...\",\"tipus\":\"breu\","
-            "\"punts\":0.5,\"enunciat\":\"...\",\"opcions\":null,\"correcta\":null,"
-            "\"resposta_model\":\"...\",\"rubrica\":\"Mencionar: X,Y\","
-            "\"explicacio\":\"...\",\"penalitza\":false},"
-            "{\"id\":3,\"tema_num\":22,\"tema_titol\":\"...\",\"tipus\":\"suposit\","
-            "\"punts\":1.0,\"enunciat\":\"...\",\"opcions\":null,\"correcta\":null,"
-            "\"resposta_model\":\"...\",\"rubrica\":\"Valorar: X,Y\","
-            "\"explicacio\":\"...\",\"penalitza\":false}]\n"
-            f"TEMES:\n{temes_text}"
+
+        blacklist_lines = []
+        for i, num in enumerate(selected_topic_nums):
+            concepts = concepts_blacklist.get(num, [])
+            if concepts and i < len(temes):
+                blacklist_lines.append(f"- {temes[i]['titol']}: {', '.join(concepts)}")
+        blacklist_text = (
+            "\n".join(blacklist_lines)
+            if blacklist_lines
+            else "Cap (primer test d'aquests temes)"
         )
-        result = await self._generate_json(prompt, max_tokens=4300)
+
+        prompt = (
+            "Ets un tribunal d'oposicions C1 informàtica d'un ajuntament català petit "
+            "(Maçanet de la Selva, ~10.000h). Genera un examen realista de 15 preguntes "
+            "en format JSON array.\n\n"
+            "DISTRIBUCIÓ OBLIGATÒRIA: exactament 10 test + 3 breu + 2 suposit.\n\n"
+            f"TEMES A COBRIR (usa TOTS, reparteix les preguntes entre ells):\n{temes_text}\n\n"
+            f"CONCEPTES JA USATS (no repeteixis cap d'aquests per al tema corresponent):\n{blacklist_text}\n\n"
+            "REGLES DE QUALITAT:\n"
+            "- test: cas pràctic real d'ajuntament, no teoria abstracta. 4 opcions plausibles "
+            "(A/B/C/D), una clarament correcta. explicacio: per qué la correcta és correcta "
+            "i per qué les altres no.\n"
+            "- breu: pregunta que exigeix explicar un procediment o decisió tècnica concreta. "
+            "resposta_model de 3-5 frases amb els punts clau. rubrica: llista de 3-4 "
+            "conceptes que s'han d'esmentar.\n"
+            "- suposit: incident o projecte TIC real a l'ajuntament amb context detallat. "
+            "resposta_model estructurada en passos numerats. rubrica: criteris de valoració.\n"
+            "- Dificultat: 4 preguntes baixa, 8 mitjana, 3 alta (repartit entre tipus).\n"
+            "- Aplica normativa vigent (ENS, RGPD, LOPDGDD, Llei 39/2015) quan sigui rellevant.\n"
+            f"- Seed de variació: {seed}\n\n"
+            "FORMAT (array JSON de exactament 15 objectes, sense text extra ni markdown):\n"
+            '[{"id":1,"tema_num":3,"tema_titol":"...","tipus":"test","punts":0.25,'
+            '"dificultat":"mitjana","enunciat":"...","opcions":{"A":"...","B":"...","C":"...","D":"..."},'
+            '"correcta":"B","explicacio":"...","penalitza":true},'
+            '{"id":2,"tema_num":7,"tema_titol":"...","tipus":"breu","punts":0.5,'
+            '"dificultat":"alta","enunciat":"...","opcions":null,"correcta":null,'
+            '"resposta_model":"...","rubrica":"Mencionar: X, Y, Z","explicacio":"...","penalitza":false},'
+            '{"id":3,"tema_num":12,"tema_titol":"...","tipus":"suposit","punts":1.0,'
+            '"dificultat":"alta","enunciat":"...","opcions":null,"correcta":null,'
+            '"resposta_model":"...","rubrica":"Valorar: X, Y, Z","explicacio":"...","penalitza":false}]'
+        )
+
+        result = await self._generate_json(
+            prompt,
+            model="meta-llama/llama-4-scout-17b-16e-instruct",
+            max_tokens=4000,
+        )
         if not isinstance(result, list):
             raise HTTPException(status_code=500, detail="La IA no ha retornat una llista de preguntes.")
         valid = [q for q in result if isinstance(q, dict) and "id" in q and "tipus" in q and "enunciat" in q]
-        if len(valid) < 15:
-            raise HTTPException(status_code=500, detail=f"La IA ha retornat massa poques preguntes vàlides ({len(valid)}/25).")
+        if len(valid) < 12:
+            raise HTTPException(
+                status_code=500,
+                detail=f"La IA ha retornat massa poques preguntes vàlides ({len(valid)}/15)."
+            )
         return valid
 
     async def evaluate_simulacre_answers(self, answers: list[dict]) -> list[dict]:
