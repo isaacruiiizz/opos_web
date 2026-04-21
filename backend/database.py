@@ -93,6 +93,17 @@ _CREATE_TABLES = [
         q_suposit_score REAL DEFAULT 0,
         q_suposit_total REAL DEFAULT 0
     )""",
+    """CREATE TABLE IF NOT EXISTS simulacre_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        current_round INTEGER NOT NULL DEFAULT 1,
+        pending_topics TEXT NOT NULL DEFAULT '[]'
+    )""",
+    """CREATE TABLE IF NOT EXISTS simulacre_topic_concepts (
+        topic_num INTEGER PRIMARY KEY,
+        topic_titol TEXT NOT NULL,
+        round_number INTEGER NOT NULL DEFAULT 0,
+        concepts_used TEXT NOT NULL DEFAULT '[]'
+    )""",
 ]
 
 
