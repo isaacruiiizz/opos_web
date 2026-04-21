@@ -40,7 +40,9 @@ def extract_concepts(enunciat: str, max_words: int = 3) -> list[str]:
 
 
 async def _get_or_init_state(db, all_topic_nums: list[int]) -> dict:
-    """Carrega l'estat de ronda. Si no existeix o pending buit, inicialitza nova ronda."""
+    """Carrega l'estat de ronda. Si no existeix, inicialitza amb tots els temes."""
+    if not all_topic_nums:
+        raise ValueError("all_topic_nums no pot ser buit")
     cursor = await db.execute(
         "SELECT current_round, pending_topics FROM simulacre_state WHERE id=1"
     )
@@ -52,27 +54,12 @@ async def _get_or_init_state(db, all_topic_nums: list[int]) -> dict:
             "INSERT INTO simulacre_state (id, current_round, pending_topics) VALUES (1, 1, ?)",
             (json.dumps(pending),)
         )
-        await db.commit()
         return {"current_round": 1, "pending_topics": pending}
 
-    pending = json.loads(row["pending_topics"])
-    current_round = row["current_round"]
-
-    if not pending:
-        new_round = current_round + 1
-        pending = all_topic_nums[:]
-        await db.execute(
-            "UPDATE simulacre_state SET current_round=?, pending_topics=? WHERE id=1",
-            (new_round, json.dumps(pending))
-        )
-        await db.execute(
-            "UPDATE simulacre_topic_concepts SET concepts_used='[]', round_number=?",
-            (new_round,)
-        )
-        await db.commit()
-        return {"current_round": new_round, "pending_topics": pending}
-
-    return {"current_round": current_round, "pending_topics": pending}
+    return {
+        "current_round": row["current_round"],
+        "pending_topics": json.loads(row["pending_topics"]),
+    }
 
 
 async def _commit_concepts(db, questions: list[dict], round_number: int) -> None:
@@ -82,6 +69,10 @@ async def _commit_concepts(db, questions: list[dict], round_number: int) -> None
         tnum = q.get("tema_num")
         ttitol = q.get("tema_titol", "")
         if tnum is None:
+            continue
+        try:
+            tnum = int(tnum)
+        except (ValueError, TypeError):
             continue
         if tnum not in by_topic:
             by_topic[tnum] = {"titol": ttitol, "concepts": []}
@@ -110,7 +101,6 @@ async def _commit_concepts(db, questions: list[dict], round_number: int) -> None
                 "INSERT INTO simulacre_topic_concepts (topic_num, topic_titol, round_number, concepts_used) VALUES (?,?,?,?)",
                 (tnum, data["titol"], round_number, json.dumps(merged))
             )
-    await db.commit()
 
 router = APIRouter(tags=["simulacre"])
 
